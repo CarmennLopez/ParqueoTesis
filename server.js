@@ -1,32 +1,35 @@
 // server.js
-require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
+const { connect } = require('mongoose');
+const dotenv = require('dotenv');
 const authRoutes = require('./src/routes/authRoutes'); // Importar las rutas de autenticación
+
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 const mongoURI = process.env.MONGODB_URI;
 
-// Middleware para parsear el cuerpo de las peticiones JSON
+// Middleware para parsear JSON
 app.use(express.json());
 
-// Conexión a la base de datos
-mongoose.connect(mongoURI)
+// Conexión a MongoDB
+connect(mongoURI)
   .then(() => {
     console.log('✅ Conectado a la base de datos de MongoDB');
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('❌ Error de conexión a la base de datos:', err);
   });
 
-// Usar las rutas de autenticación
+// Rutas
 app.use('/api/auth', authRoutes);
 
 app.get('/', (req, res) => {
   res.send('¡API de parqueo funcionando!');
 });
 
+// Servidor
 app.listen(port, () => {
-  console.log(`Servidor escuchando en http://localhost:${port}`);
+  console.log(`🚀 Servidor escuchando en http://localhost:${port}`);
 });
