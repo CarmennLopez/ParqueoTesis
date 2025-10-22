@@ -2,6 +2,7 @@
 const express = require('express');
 const { connect } = require('mongoose');
 const dotenv = require('dotenv');
+const parkingRoutes = require('./src/routes/parkingRoutes'); // Importar las rutas de parqueo
 const authRoutes = require('./src/routes/authRoutes'); // Importar las rutas de autenticación
 
 dotenv.config();
@@ -24,6 +25,7 @@ connect(mongoURI)
 
 // Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/parking', parkingRoutes); // Usar las rutas de parqueo
 
 app.get('/', (req, res) => {
   res.send('¡API de parqueo funcionando!');

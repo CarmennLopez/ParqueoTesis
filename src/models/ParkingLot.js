@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const spaceSchema = new mongoose.Schema({
   spaceNumber: {
-    type: Number,
+    type: String, // Cambiado de Number a String
     required: true
   },
   isOccupied: {
@@ -12,6 +12,10 @@ const spaceSchema = new mongoose.Schema({
   occupiedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    default: null
+  },
+  entryTime: {
+    type: Date,
     default: null
   }
 });

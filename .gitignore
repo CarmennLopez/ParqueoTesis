@@ -1,0 +1,19 @@
+# Dependencias
+# Ignora el directorio de los paquetes de node
+/node_modules
+
+# Variables de entorno
+# Ignora el archivo que contiene las variables de entorno y secretos
+.env
+
+# Logs
+# Ignora archivos de log que se puedan generar
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de sistema operativo
+.DS_Store
+
