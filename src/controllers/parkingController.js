@@ -3,8 +3,9 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/user');
 const ParkingLot = require('../models/ParkingLot');
 
-// TARIFA DE PARQUEO: $1.50 por minuto (solo para el ejemplo)
-const RATE_PER_MINUTE = 1.50;
+// TARIFA DE PARQUEO: $2.50 por hora (valor realista)
+const RATE_PER_HOUR = 2.50;
+const PARKING_LOT_NAME = process.env.PARKING_LOT_NAME || 'Parqueo Principal';
 
 /**
  * @desc Asigna un espacio de parqueo disponible al usuario autenticado.
@@ -30,37 +31,46 @@ const assignSpace = asyncHandler(async (req, res) => {
     // 2. Buscar y actualizar atómicamente el primer espacio disponible
     const entryTime = new Date();
     const parkingLot = await ParkingLot.findOneAndUpdate(
-        { "spaces.isOccupied": false }, // Condición de búsqueda: un lote con al menos un espacio libre
+        {
+            name: PARKING_LOT_NAME,
+            "spaces.isOccupied": false
+        },
         {
             $set: {
-                "spaces.$.isOccupied": true, // Marca el espacio encontrado como ocupado
+                "spaces.$.isOccupied": true,
                 "spaces.$.occupiedBy": userId,
                 "spaces.$.entryTime": entryTime,
             },
-            $inc: { availableSpaces: -1 } // Decrementa el contador de espacios disponibles
+            $inc: { availableSpaces: -1 }
         },
-        { new: true } // Devuelve el documento actualizado
+        { new: true }
     );
 
     if (!parkingLot) {
-        res.status(503); // Service Unavailable (Parqueo lleno)
+        res.status(503);
         throw new Error('Parqueo lleno. Intente más tarde.');
     }
 
-    // Encontrar el espacio que acabamos de asignar para obtener su número
+    // 3. Encontrar el espacio que acabamos de asignar
     const assignedSpace = parkingLot.spaces.find(s => s.occupiedBy && s.occupiedBy.equals(userId));
+
+    if (!assignedSpace) {
+        res.status(500);
+        throw new Error('Error al asignar espacio. Contacte al administrador.');
+    }
 
     // 4. Actualizar el usuario
     user.currentParkingSpace = assignedSpace.spaceNumber;
     user.entryTime = entryTime;
-    user.hasPaid = false; // Resetear el estado de pago al ingresar
+    user.hasPaid = false;
 
     await user.save();
 
     res.status(200).json({
         message: 'Espacio asignado con éxito',
         space: assignedSpace.spaceNumber,
-        entryTime: user.entryTime
+        entryTime: user.entryTime,
+        rate: `$${RATE_PER_HOUR} por hora`
     });
 });
 
@@ -85,27 +95,36 @@ const payParking = asyncHandler(async (req, res) => {
         throw new Error('No tienes un vehículo registrado en el parqueo para pagar.');
     }
 
-    // 1. Calcular el costo (Lógica simplificada: simula que el costo se calculó en un paso previo)
+    // Verificar si ya ha pagado
+    if (user.hasPaid) {
+        res.status(400);
+        throw new Error('Ya has realizado el pago para este estacionamiento.');
+    }
 
-    // Calculamos el tiempo de estancia actual para mostrar un recibo
+    // Calcular el costo basado en horas
     const entryTime = user.entryTime;
     const currentTime = new Date();
     const durationMs = currentTime - entryTime;
-    const durationMinutes = Math.ceil(durationMs / (1000 * 60)); // Tiempo en minutos
-    const totalCost = (durationMinutes * RATE_PER_MINUTE).toFixed(2);
+    const durationHours = durationMs / (1000 * 60 * 60); // Tiempo en horas
+    const durationMinutes = Math.ceil(durationMs / (1000 * 60)); // Para mostrar al usuario
 
-    // 2. Actualizar el estado de pago del usuario
+    // Cobrar por hora completa o fracción (redondear hacia arriba)
+    const hoursToCharge = Math.ceil(durationHours);
+    const totalCost = (hoursToCharge * RATE_PER_HOUR).toFixed(2);
+
+    // Actualizar el estado de pago del usuario
     user.hasPaid = true;
     await user.save();
 
     res.status(200).json({
         message: 'Pago registrado con éxito. Puede proceder a la salida.',
         costoPagado: `$${totalCost}`,
-        tiempo: `${durationMinutes} minutos`,
+        tiempoEstancia: `${durationMinutes} minutos`,
+        horasCobradas: hoursToCharge,
+        tarifaPorHora: `$${RATE_PER_HOUR}`,
         hasPaid: user.hasPaid
     });
 });
-
 
 /**
  * @desc Libera el espacio de parqueo, calcula el costo total y valida el pago.
@@ -133,37 +152,49 @@ const releaseSpace = asyncHandler(async (req, res) => {
 
     // Calcular la duración y el costo TOTAL
     const durationMs = currentTime - entryTime;
-    const durationMinutes = Math.ceil(durationMs / (1000 * 60)); // Redondea al minuto superior
-    const totalCost = (durationMinutes * RATE_PER_MINUTE).toFixed(2);
+    const durationHours = durationMs / (1000 * 60 * 60);
+    const durationMinutes = Math.ceil(durationMs / (1000 * 60));
+    const hoursToCharge = Math.ceil(durationHours);
+    const totalCost = (hoursToCharge * RATE_PER_HOUR).toFixed(2);
 
     // 2. LÓGICA CRÍTICA: Validar Pago
     if (!user.hasPaid) {
-        // Barrera denegada: Pide el pago
         res.status(402).json({
             message: 'Salida denegada. Debe pagar el servicio de parqueo.',
             requiredAction: 'Pagar en /api/parking/pay',
             timeSpent: `${durationMinutes} minutos`,
+            horasCobrar: hoursToCharge,
             totalCost: `$${totalCost}`
         });
-        return; // Detiene la ejecución
+        return;
     }
 
     // 3. Liberar el espacio en el Lote
-    const parkingLot = await ParkingLot.findOne({});
+    const parkingLot = await ParkingLot.findOne({ name: PARKING_LOT_NAME });
+
+    if (!parkingLot) {
+        res.status(500);
+        throw new Error('Error: No se encontró la configuración del parqueo.');
+    }
+
     const spaceToRelease = parkingLot.spaces.find(s => s.spaceNumber === user.currentParkingSpace);
 
     if (spaceToRelease) {
         spaceToRelease.isOccupied = false;
         spaceToRelease.occupiedBy = null;
         spaceToRelease.entryTime = null;
+
+        // CORRECCIÓN CRÍTICA: Incrementar el contador de espacios disponibles
+        parkingLot.availableSpaces += 1;
+
         await parkingLot.save();
     }
 
     // 4. Limpiar los campos del usuario
     const releasedSpace = user.currentParkingSpace;
-    user.currentParkingSpace = null; // Usar null para limpiar el campo
-    user.entryTime = null;         // Usar null para limpiar el campo
-    // user.hasPaid ya se reinicia al entrar, pero podemos asegurarlo aquí también.
+    user.currentParkingSpace = null;
+    user.entryTime = null;
+    user.hasPaid = false; // Resetear para el próximo uso
 
     await user.save();
 
@@ -171,6 +202,7 @@ const releaseSpace = asyncHandler(async (req, res) => {
     res.status(200).json({
         message: `¡Salida exitosa! Espacio ${releasedSpace} liberado. Barrera abierta.`,
         timeSpent: `${durationMinutes} minutos`,
+        horasCobradas: hoursToCharge,
         costFinal: `$${totalCost}`
     });
 });
@@ -178,11 +210,11 @@ const releaseSpace = asyncHandler(async (req, res) => {
 /**
  * @desc Obtiene el estado actual del parqueo (para vista de administrador/dashboard).
  * @route GET /api/parking/status
- * @access Private
+ * @access Private (Solo administradores)
  */
 const getParkingStatus = asyncHandler(async (req, res) => {
-    // Nota: Aquí no verificamos rol de administrador por simplicidad, solo la autenticación
-    const parkingLot = await ParkingLot.findOne({});
+    const parkingLot = await ParkingLot.findOne({ name: PARKING_LOT_NAME })
+        .populate('spaces.occupiedBy', 'name email vehiclePlate'); // Incluir detalles del usuario
 
     if (!parkingLot) {
         res.status(404);
@@ -194,29 +226,42 @@ const getParkingStatus = asyncHandler(async (req, res) => {
     const occupiedSpaces = parkingLot.spaces.filter(space => space.isOccupied).length;
     const availableSpaces = totalSpaces - occupiedSpaces;
 
-    // Crear un resumen de los espacios ocupados
+    // Crear un resumen de los espacios ocupados con información del usuario
     const occupiedDetails = parkingLot.spaces
         .filter(space => space.isOccupied)
-        .map(space => ({
-            spaceNumber: space.spaceNumber,
-            occupiedBy: space.occupiedBy,
-            entryTime: space.entryTime,
-        }));
+        .map(space => {
+            const durationMs = new Date() - space.entryTime;
+            const durationMinutes = Math.ceil(durationMs / (1000 * 60));
+            const durationHours = Math.ceil(durationMs / (1000 * 60 * 60));
+            const estimatedCost = (durationHours * RATE_PER_HOUR).toFixed(2);
+
+            return {
+                spaceNumber: space.spaceNumber,
+                occupiedBy: space.occupiedBy ? {
+                    name: space.occupiedBy.name,
+                    email: space.occupiedBy.email,
+                    vehiclePlate: space.occupiedBy.vehiclePlate
+                } : null,
+                entryTime: space.entryTime,
+                durationMinutes: durationMinutes,
+                estimatedCost: `$${estimatedCost}`
+            };
+        });
 
     res.status(200).json({
         parkingLotName: parkingLot.name,
+        location: parkingLot.location,
         totalSpaces,
         occupiedSpaces,
         availableSpaces,
         occupiedDetails,
-        // Nota: Si quieres los detalles de los usuarios (email, etc.), necesitarías hacer otra consulta a la colección User.
+        ratePerHour: `$${RATE_PER_HOUR}`
     });
 });
-
 
 module.exports = {
     assignSpace,
     payParking,
     releaseSpace,
-    getParkingStatus, // Exportar la nueva función
+    getParkingStatus,
 };

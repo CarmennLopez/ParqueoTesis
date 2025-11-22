@@ -2,45 +2,59 @@
 const jwt = require('jsonwebtoken');
 
 /**
-
-Middleware para verificar la validez del JWT (JSON Web Token)
-
-y proteger las rutas que requieren autenticación.
-*/
+ * Middleware para verificar la validez del JWT (JSON Web Token)
+ * y proteger las rutas que requieren autenticación.
+ * 
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ * @param {Function} next - Next middleware function
+ */
 exports.protect = (req, res, next) => {
-// 1. Obtener el token del header (Bearer Token)
-let token;
+  // 1. Verificar si existe el header de autorización
+  if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer')) {
+    return res.status(401).json({
+      message: 'No autorizado, no se proporcionó token de autenticación'
+    });
+  }
 
-if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-try {
-// El formato es "Bearer <token>", separamos para obtener solo el token
-token = req.headers.authorization.split(' ')[1];
+  try {
+    // 2. Extraer el token del header (formato: "Bearer <token>")
+    const token = req.headers.authorization.split(' ')[1];
 
-  // 2. Verificar y decodificar el token usando la clave secreta
-  // Nota: Si el token es inválido o expiró, jwt.verify lanzará un error.
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!token) {
+      return res.status(401).json({
+        message: 'No autorizado, token malformado'
+      });
+    }
 
-  // 3. Adjuntar el ID del usuario decodificado a la petición (req.user)
-  // Esto permite que los controladores sepan quién está haciendo la petición.
-  req.userId = decoded.id;
-  req.hasPaid = decoded.hasPaid; // También adjuntamos si ha pagado
+    // 3. Verificar y decodificar el token usando la clave secreta
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  // 4. Continuar al siguiente middleware o controlador de ruta
-  next();
+    // 4. Adjuntar el ID del usuario y su rol a la petición
+    // Esto permite que los controladores sepan quién está haciendo la petición
+    req.userId = decoded.id;
+    req.userRole = decoded.role;
 
-} catch (error) {
-  // Manejar tokens inválidos o expirados
-  console.error('Error de verificación de token:', error.message);
-  return res.status(401).json({ 
-    message: 'No autorizado, token fallido o no válido.',
-    error: error.message
-  });
-}
+    // 5. Continuar al siguiente middleware o controlador de ruta
+    next();
 
-}
-
-// 5. Si no hay token en el header
-if (!token) {
-return res.status(401).json({ message: 'No autorizado, no hay token.' });
-}
+  } catch (error) {
+    // Manejar diferentes tipos de errores de JWT
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        message: 'No autorizado, el token ha expirado',
+        error: 'TokenExpired'
+      });
+    } else if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        message: 'No autorizado, token inválido',
+        error: 'InvalidToken'
+      });
+    } else {
+      return res.status(401).json({
+        message: 'No autorizado, error de autenticación',
+        error: error.message
+      });
+    }
+  }
 };

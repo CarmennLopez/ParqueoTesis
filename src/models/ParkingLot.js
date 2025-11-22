@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const spaceSchema = new mongoose.Schema({
   spaceNumber: {
-    type: String, // Cambiado de Number a String
+    type: String,
     required: true
   },
   isOccupied: {
@@ -31,10 +31,6 @@ const parkingLotSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
-  },
-  isExclusive: {
-    type: Boolean,
-    default: false
   },
   totalSpaces: {
     type: Number,

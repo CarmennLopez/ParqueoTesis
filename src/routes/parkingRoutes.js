@@ -1,9 +1,9 @@
 // src/routes/parkingRoutes.js
-
-// Importaciones necesarias
 const express = require('express');
-const { protect } = require('../middleware/authMiddleware'); // Middleware de protección JWT
-const parkingController = require('../controllers/parkingController'); // Controlador con la lógica de negocio
+const { protect } = require('../middleware/authMiddleware');
+const authorize = require('../middleware/authorize');
+const parkingController = require('../controllers/parkingController');
+const { USER_ROLES } = require('../config/constants');
 
 const router = express.Router();
 
@@ -14,21 +14,21 @@ const router = express.Router();
 /**
  * @route POST /api/parking/assign
  * @desc Asigna un espacio libre al usuario (ENTRADA)
- * @access Private
+ * @access Private - Usuarios autenticados
  */
 router.post('/assign', protect, parkingController.assignSpace);
 
 /**
  * @route POST /api/parking/pay
- * @desc Simula el pago de la tarifa del parqueo (Actualiza hasPaid a true)
- * @access Private
+ * @desc Simula el pago de la tarifa del parqueo
+ * @access Private - Usuarios autenticados
  */
 router.post('/pay', protect, parkingController.payParking);
 
 /**
  * @route POST /api/parking/release
  * @desc Libera el espacio, calcula el costo y verifica el pago (SALIDA)
- * @access Private
+ * @access Private - Usuarios autenticados
  */
 router.post('/release', protect, parkingController.releaseSpace);
 
@@ -38,9 +38,9 @@ router.post('/release', protect, parkingController.releaseSpace);
 
 /**
  * @route GET /api/parking/status
- * @desc Obtiene el estado actual de ocupación del parqueo.
- * @access Private (Requiere autenticación, idealmente de un rol Admin)
+ * @desc Obtiene el estado actual de ocupación del parqueo
+ * @access Private - Solo administradores
  */
-router.get('/status', protect, parkingController.getParkingStatus);
+router.get('/status', protect, authorize(USER_ROLES.ADMIN, USER_ROLES.OPERATOR), parkingController.getParkingStatus);
 
 module.exports = router;

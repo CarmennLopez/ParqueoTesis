@@ -3,7 +3,7 @@
 const { connect } = require('mongoose');
 const dotenv = require('dotenv');
 // Importa el modelo ParkingLot desde la carpeta de modelos
-const ParkingLot = require('./src/models/ParkingLot'); 
+const ParkingLot = require('./src/models/ParkingLot');
 
 // Cargar variables de entorno
 dotenv.config();
@@ -11,10 +11,10 @@ dotenv.config();
 const mongoURI = process.env.MONGODB_URI;
 
 // --- CONFIGURACIÓN DEL PARQUEO ---
-const PARKING_LOT_NAME = 'Parqueo TesisProyect';
+const PARKING_LOT_NAME = process.env.PARKING_LOT_NAME || 'Parqueo Principal';
 const NUM_SPACES = 10;
 // Las filas del parqueo (para generar nombres como A1, A2, B1, B2...)
-const ROWS = ['A', 'B']; 
+const ROWS = ['A', 'B'];
 // ----------------------------------
 
 // Función principal para generar los datos y guardarlos
@@ -34,13 +34,13 @@ const seedDB = async () => {
         // 2. Generar la lista de espacios
         const spaces = [];
         let count = 0;
-        
+
         // Genera 10 espacios con nombres como A1, A2, A3, A4, A5, B1, B2...
         for (let i = 0; i < ROWS.length && count < NUM_SPACES; i++) {
             const row = ROWS[i];
             // Distribuye los espacios entre las filas (ej: 5 en A y 5 en B)
-            const spacesInRow = Math.min(NUM_SPACES - count, Math.ceil(NUM_SPACES / ROWS.length)); 
-            
+            const spacesInRow = Math.min(NUM_SPACES - count, Math.ceil(NUM_SPACES / ROWS.length));
+
             for (let j = 1; j <= spacesInRow && count < NUM_SPACES; j++) {
                 spaces.push({
                     spaceNumber: `${row}${j}`,
@@ -75,7 +75,7 @@ const seedDB = async () => {
             console.log('🔌 Desconectado de MongoDB.');
         }
         // Asegúrate de que el proceso termine después de la desconexión
-        process.exit(); 
+        process.exit();
     }
 };
 
