@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Backend API
+  api:
+    build: .
+    container_name: parking-backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongo:27017/parking_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-supersecretkey_change_in_production}
+      - PARKING_LOT_NAME=Campus Central
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - parking-net
+
+  # Base de Datos MongoDB
+  mongo:
+    image: mongo:7.0
+    container_name: parking-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - parking-net
+
+  # Caché Redis
+  redis:
+    image: redis:alpine
+    container_name: parking-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - parking-net
+
+networks:
+  parking-net:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  redis_data:

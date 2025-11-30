@@ -1,5 +1,6 @@
 // src/config/logger.js
 const winston = require('winston');
+require('winston-daily-rotate-file');
 const path = require('path');
 
 // Definir niveles de log
@@ -24,28 +25,39 @@ const colors = {
 winston.addColors(colors);
 
 // Formato de logs
-const format = winston.format.combine(
+const logFormat = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.colorize({ all: true }),
-    winston.format.printf(
-        (info) => `${info.timestamp} ${info.level}: ${info.message}`
-    )
+    winston.format.errors({ stack: true }),
+    winston.format.splat(),
+    winston.format.json()
 );
 
-// Definir qué logs se guardan en qué archivos
-const transports = [
-    // Consola - todos los logs
-    new winston.transports.Console(),
+// Transporte para rotación diaria de logs
+const fileRotateTransport = new winston.transports.DailyRotateFile({
+    filename: 'logs/application-%DATE%.log',
+    datePattern: 'YYYY-MM-DD',
+    zippedArchive: true,
+    maxSize: '20m',
+    maxFiles: '14d'
+});
 
-    // Archivo para errores
+// Definir transportes
+const transports = [
+    // Consola - todos los logs (solo en dev o si se configura)
+    new winston.transports.Console({
+        format: winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple()
+        ),
+    }),
+
+    // Archivo rotativo para todos los logs
+    fileRotateTransport,
+
+    // Archivo específico para errores (opcional, si se quiere separar)
     new winston.transports.File({
         filename: path.join('logs', 'error.log'),
         level: 'error',
-    }),
-
-    // Archivo para todos los logs
-    new winston.transports.File({
-        filename: path.join('logs', 'combined.log')
     }),
 ];
 
@@ -53,7 +65,8 @@ const transports = [
 const logger = winston.createLogger({
     level: process.env.LOG_LEVEL || 'info',
     levels,
-    format,
+    format: logFormat,
+    defaultMeta: { service: 'parking-service' },
     transports,
 });
 

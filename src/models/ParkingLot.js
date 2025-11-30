@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const spaceSchema = new mongoose.Schema({
+const ParkingSpaceSchema = new mongoose.Schema({
   spaceNumber: {
     type: String,
     required: true
@@ -20,7 +20,7 @@ const spaceSchema = new mongoose.Schema({
   }
 });
 
-const parkingLotSchema = new mongoose.Schema({
+const ParkingLotSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -28,9 +28,8 @@ const parkingLotSchema = new mongoose.Schema({
     trim: true
   },
   location: {
-    type: String,
-    required: true,
-    trim: true
+    type: { type: String, default: 'Point' },
+    coordinates: { type: [Number], default: [0, 0] } // [longitud, latitud]
   },
   totalSpaces: {
     type: Number,
@@ -38,13 +37,14 @@ const parkingLotSchema = new mongoose.Schema({
   },
   availableSpaces: {
     type: Number,
-    required: true
+    default: 0
   },
-  spaces: [spaceSchema] // Arreglo de sub-documentos `spaceSchema`
+  spaces: [ParkingSpaceSchema]
 }, {
   timestamps: true
 });
 
-const ParkingLot = mongoose.model('ParkingLot', parkingLotSchema);
+// Índice geoespacial para búsquedas de cercanía
+ParkingLotSchema.index({ location: '2dsphere' });
 
-module.exports = ParkingLot;
+module.exports = mongoose.models.ParkingLot || mongoose.model('ParkingLot', ParkingLotSchema);

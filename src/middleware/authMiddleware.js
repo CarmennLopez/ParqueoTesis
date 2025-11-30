@@ -9,7 +9,7 @@ const jwt = require('jsonwebtoken');
  * @param {Object} res - Response object
  * @param {Function} next - Next middleware function
  */
-exports.protect = (req, res, next) => {
+exports.protect = async (req, res, next) => {
   // 1. Verificar si existe el header de autorización
   if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer')) {
     return res.status(401).json({
@@ -30,12 +30,22 @@ exports.protect = (req, res, next) => {
     // 3. Verificar y decodificar el token usando la clave secreta
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 4. Adjuntar el ID del usuario y su rol a la petición
-    // Esto permite que los controladores sepan quién está haciendo la petición
-    req.userId = decoded.id;
-    req.userRole = decoded.role;
+    // 4. Buscar el usuario en la base de datos (Seguridad Robusta)
+    // Esto asegura que si el usuario fue eliminado o su rol cambió, el token no sirva
+    const User = require('../models/user');
+    const user = await User.findById(decoded.id).select('-password');
 
-    // 5. Continuar al siguiente middleware o controlador de ruta
+    if (!user) {
+      return res.status(401).json({
+        message: 'No autorizado, usuario no encontrado o eliminado'
+      });
+    }
+
+    // 5. Adjuntar el usuario completo a la petición
+    req.user = user;
+    req.userId = user._id; // Mantener compatibilidad
+
+    // 6. Continuar al siguiente middleware
     next();
 
   } catch (error) {

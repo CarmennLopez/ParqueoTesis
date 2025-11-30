@@ -4,12 +4,14 @@ const { connect } = require('mongoose');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const cors = require('cors');
-const mongoSanitize = require('express-mongo-sanitize');
+// const mongoSanitize = require('express-mongo-sanitize'); // Comentado por incompatibilidad con Express 5
 const compression = require('compression');
 const parkingRoutes = require('./src/routes/parkingRoutes');
 const authRoutes = require('./src/routes/authRoutes');
+const healthRoutes = require('./src/routes/healthRoutes');
 const errorHandler = require('./src/middleware/errorHandler');
 const logger = require('./src/config/logger');
+const { connect: connectRedis, isRedisHealthy } = require('./src/config/redisClient');
 
 // Cargar variables de entorno
 dotenv.config();
@@ -44,8 +46,15 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Versionado de API (Antes de las rutas)
+const versionMiddleware = require('./src/middleware/versionMiddleware');
+app.use(versionMiddleware);
+
+// Health check routes (Antes de otros middlewares para máxima disponibilidad)
+app.use('/health', healthRoutes);
+
 // Sanitización contra inyección NoSQL
-app.use(mongoSanitize());
+// app.use(mongoSanitize()); // TODO: Buscar alternativa compatible con Express 5
 
 // Compresión de respuestas
 app.use(compression());
@@ -55,6 +64,10 @@ app.use(express.json());
 
 // Middleware para parsear URL-encoded
 app.use(express.urlencoded({ extended: true }));
+
+// Middleware de Idempotencia (después de body parser)
+const idempotency = require('./src/middleware/idempotencyMiddleware');
+app.use(idempotency);
 
 // ========================================
 // CONEXIÓN A MONGODB
@@ -69,31 +82,26 @@ connect(mongoURI)
     process.exit(1);
   });
 
-// ========================================
-// RUTAS
-// ========================================
 
 // Ruta de bienvenida
 app.get('/', (req, res) => {
   res.json({
-    message: '¡API de parqueo funcionando!',
-    version: '1.0.0',
+    message: '¡API de parqueo UMG funcionando!',
+    version: '2.0.0',
     status: 'active',
+    features: [
+      'Redis Caching',
+      'ACID Transactions',
+      'Health Checks Avanzados',
+      'Simulación IoT/FEL/LDAP'
+    ],
     endpoints: {
       auth: '/api/auth',
       parking: '/api/parking',
-      health: '/health'
+      health: '/health',
+      healthLiveness: '/health/liveness',
+      healthReadiness: '/health/readiness'
     }
-  });
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    uptime: process.uptime(),
-    timestamp: Date.now(),
-    environment: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -102,6 +110,23 @@ app.use('/api/auth', authRoutes);
 
 // Rutas de parqueo
 app.use('/api/parking', parkingRoutes);
+
+// Rutas de facturación
+const invoiceRoutes = require('./src/routes/invoiceRoutes');
+app.use('/api/invoices', invoiceRoutes);
+
+// Rutas IoT (LPR, Sensores)
+const iotRoutes = require('./src/routes/iotRoutes');
+app.use('/api/iot', iotRoutes);
+
+// Documentación Swagger
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./src/config/swagger');
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpecs);
+});
 
 // ========================================
 // MANEJO DE ERRORES
@@ -119,12 +144,24 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 // ========================================
-// SERVIDOR
+// SERVIDOR HTTP & SOCKET.IO
 // ========================================
+const http = require('http');
+const { initSocket } = require('./src/services/socketService');
 
-app.listen(port, () => {
+const server = http.createServer(app);
+const io = initSocket(server);
+
+server.listen(port, () => {
   logger.info(`🚀 Servidor escuchando en http://localhost:${port}`);
   logger.info(`📝 Modo: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`🔌 Socket.io listo para conexiones`);
+
+  // Simulación de Cron Job para notificaciones (cada 60 segundos)
+  const checkExpirations = require('./src/scripts/checkExpirations');
+  setInterval(() => {
+    checkExpirations();
+  }, 60000);
 });
 
 // Manejo de rechazos no capturados

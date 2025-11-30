@@ -8,7 +8,8 @@ module.exports = {
     RATE_PER_HOUR: 2.50,
 
     // Configuración de JWT
-    JWT_EXPIRATION: '24h',
+    JWT_EXPIRATION: '15m', // Access Token corto (15 min)
+    REFRESH_TOKEN_EXPIRATION: '7d', // Refresh Token largo (7 días)
 
     // Rate limiting
     LOGIN_RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000, // 15 minutos
@@ -24,10 +25,12 @@ module.exports = {
     // Validación de placas
     VEHICLE_PLATE_REGEX: /^[A-Z0-9]{6,8}$/i,
 
-    // Roles de usuario
+    // Roles de usuario (Jerárquicos)
     USER_ROLES: {
-        USER: 'user',
-        ADMIN: 'admin',
-        OPERATOR: 'operator'
+        ADMIN: 'admin',      // Acceso total al sistema
+        GUARD: 'guard',      // Operador de garita (verificar, liberar manual)
+        FACULTY: 'faculty',  // Catedráticos y personal administrativo
+        STUDENT: 'student',  // Estudiantes activos
+        VISITOR: 'visitor'   // Visitantes externos
     }
 };

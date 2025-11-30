@@ -1,8 +1,9 @@
-// src/controllers/authController.js
-const User = require('../models/user');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
+const User = require('../models/user');
+const { generateAccessToken, generateRefreshToken, verifyAndRotateRefreshToken, revokeRefreshToken } = require('../utils/tokenUtils');
+const { logAudit } = require('../utils/auditLogger');
+const { getCache, setCache } = require('../config/redisClient');
+const { USER_ROLES } = require('../config/constants');
 
 /**
  * @desc Registrar un nuevo usuario
@@ -10,114 +11,151 @@ const asyncHandler = require('express-async-handler');
  * @access Public
  */
 exports.register = asyncHandler(async (req, res) => {
-  const { name, email, password, cardId, vehiclePlate } = req.body;
+  const { name, email, password, cardId, vehiclePlate, role } = req.body;
 
-  // Validar que todos los campos requeridos estén presentes
-  if (!name || !email || !password || !cardId || !vehiclePlate) {
+  const userExists = await User.findOne({ email });
+  if (userExists) {
     res.status(400);
-    throw new Error('Todos los campos son requeridos: name, email, password, cardId, vehiclePlate');
+    throw new Error('El usuario ya existe');
   }
 
-  // Validar formato de email
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    res.status(400);
-    throw new Error('Formato de email inválido');
-  }
-
-  // Validar requisitos de contraseña (mínimo 8 caracteres, al menos una mayúscula y un número)
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-  if (!passwordRegex.test(password)) {
-    res.status(400);
-    throw new Error('La contraseña debe tener al menos 8 caracteres, incluir una mayúscula y un número');
-  }
-
-  // Validar formato de placa (6-8 caracteres alfanuméricos)
-  const plateRegex = /^[A-Z0-9]{6,8}$/i;
-  if (!plateRegex.test(vehiclePlate)) {
-    res.status(400);
-    throw new Error('La placa del vehículo debe tener entre 6 y 8 caracteres alfanuméricos');
-  }
-
-  // Verificar si el usuario ya existe (email, cardId o vehiclePlate duplicados)
-  const existingUserByEmail = await User.findOne({ email });
-  if (existingUserByEmail) {
-    res.status(400);
-    throw new Error('Ya existe un usuario con este correo electrónico');
-  }
-
-  const existingUserByCardId = await User.findOne({ cardId });
-  if (existingUserByCardId) {
-    res.status(400);
-    throw new Error('Ya existe un usuario con este ID de tarjeta');
-  }
-
-  const existingUserByPlate = await User.findOne({ vehiclePlate: vehiclePlate.toUpperCase() });
-  if (existingUserByPlate) {
-    res.status(400);
-    throw new Error('Ya existe un usuario con esta placa de vehículo');
-  }
-
-  // Crear el nuevo usuario
-  const newUser = new User({
+  const user = await User.create({
     name,
     email,
-    password, // La contraseña se encriptará automáticamente por el middleware pre-save del modelo
+    password,
     cardId,
-    vehiclePlate
+    vehiclePlate,
+    role: role || USER_ROLES.STUDENT
   });
 
-  await newUser.save();
+  if (user) {
+    logAudit(req, 'REGISTER', 'User', { userId: user._id, email: user.email });
 
-  res.status(201).json({
-    message: 'Usuario registrado exitosamente',
-    user: {
-      id: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role
-    }
-  });
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateAccessToken(user)
+    });
+  } else {
+    res.status(400);
+    throw new Error('Datos de usuario inválidos');
+  }
 });
 
 /**
- * @desc Iniciar sesión de usuario
+ * @desc Iniciar sesión y obtener tokens
  * @route POST /api/auth/login
  * @access Public
  */
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // Validar que los campos estén presentes
-  if (!email || !password) {
-    res.status(400);
-    throw new Error('Email y contraseña son requeridos');
-  }
-
-  // Verificar si el usuario existe
   const user = await User.findOne({ email });
-  if (!user || !(await user.matchPassword(password))) {
-    res.status(401); // 401 Unauthorized es más apropiado para login fallido
-    throw new Error('Credenciales inválidas');
-  }
 
-  // Crear y firmar el token JWT
-  const token = jwt.sign(
-    { id: user._id, role: user.role }, // Incluimos el rol en el token
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRATION || '24h' } // Token expira en 24h por defecto
-  );
+  if (user && (await user.matchPassword(password))) {
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await generateRefreshToken(user);
 
-  res.status(200).json({
-    message: 'Inicio de sesión exitoso',
-    token,
-    user: {
-      id: user._id,
+    logAudit(req, 'LOGIN', 'User', { userId: user._id, email: user.email });
+
+    res.json({
+      _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
       hasPaid: user.hasPaid,
-      currentParkingSpace: user.currentParkingSpace
+      currentParkingSpace: user.currentParkingSpace,
+      accessToken,
+      refreshToken
+    });
+  } else {
+    logAudit(req, 'LOGIN_FAILED', 'User', { email });
+    res.status(401);
+    throw new Error('Credenciales inválidas');
+  }
+});
+
+/**
+ * @desc Renovar Access Token usando Refresh Token
+ * @route POST /api/auth/refresh
+ * @access Public (requiere Refresh Token en body)
+ */
+exports.refreshToken = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    res.status(400);
+    throw new Error('Refresh Token es requerido');
+  }
+
+  try {
+    // Verificar y rotar el token (esto borra el anterior de Redis)
+    const payload = await verifyAndRotateRefreshToken(refreshToken);
+
+    // Buscar usuario actualizado
+    const user = await User.findById(payload.userId);
+    if (!user) {
+      res.status(401);
+      throw new Error('Usuario no encontrado');
     }
-  });
+
+    // Generar nuevo par de tokens
+    const newAccessToken = generateAccessToken(user);
+    const newRefreshToken = await generateRefreshToken(user);
+
+    res.json({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken
+    });
+
+  } catch (error) {
+    res.status(403);
+    throw new Error('Refresh Token inválido o expirado');
+  }
+});
+
+/**
+ * @desc Cerrar sesión (Revocar Refresh Token)
+ * @route POST /api/auth/logout
+ * @access Public (requiere Refresh Token en body)
+ */
+exports.logout = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (refreshToken) {
+    await revokeRefreshToken(refreshToken);
+  }
+
+  res.status(200).json({ message: 'Sesión cerrada exitosamente' });
+});
+
+/**
+ * @desc Obtener perfil del usuario actual
+ * @route GET /api/auth/me
+ * @access Private
+ */
+exports.getMe = asyncHandler(async (req, res) => {
+  const userId = req.userId;
+  const cacheKey = `user_profile:${userId}`;
+
+  // 1. Intentar caché
+  const cachedUser = await getCache(cacheKey);
+  if (cachedUser) {
+    return res.status(200).json(cachedUser);
+  }
+
+  // 2. Consultar DB
+  const user = await User.findById(userId).select('-password');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('Usuario no encontrado');
+  }
+
+  // 3. Guardar en caché (TTL 60s - perfil no cambia seguido)
+  await setCache(cacheKey, user, 60);
+
+  res.status(200).json(user);
 });

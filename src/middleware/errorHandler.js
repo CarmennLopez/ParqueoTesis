@@ -1,7 +1,9 @@
 // src/middleware/errorHandler.js
+const logger = require('../config/logger');
+
 /**
  * Middleware centralizado de manejo de errores
- * Captura todos los errores y formatea respuestas consistentes
+ * Implementa RFC 7807: Problem Details for HTTP APIs
  */
 const errorHandler = (err, req, res, next) => {
     let statusCode = err.statusCode || res.statusCode || 500;
@@ -14,26 +16,43 @@ const errorHandler = (err, req, res, next) => {
     // Determinar si mostrar el stack trace
     const showStackTrace = process.env.NODE_ENV !== 'production';
 
-    // Respuesta de error
-    res.status(statusCode).json({
-        success: false,
-        message: err.message || 'Error del servidor',
+    // Estructura RFC 7807
+    const problemDetails = {
+        type: 'about:blank', // URI que identifica el tipo de problema (opcional)
+        title: getTitleForStatus(statusCode),
+        status: statusCode,
+        detail: err.message || 'Ocurrió un error inesperado en el servidor.',
+        instance: req.originalUrl,
+        timestamp: new Date().toISOString(),
         ...(showStackTrace && { stack: err.stack }),
-        // Información adicional del error si está disponible
-        ...(err.errors && { errors: err.errors })
+        ...(err.errors && { invalidParams: err.errors }) // Extension para errores de validación
+    };
+
+    // Log del error con Winston
+    logger.error(`${problemDetails.title}: ${problemDetails.detail}`, {
+        ...problemDetails,
+        method: req.method,
+        ip: req.ip
     });
 
-    // Log del error (en producción se debería usar Winston)
-    if (process.env.NODE_ENV === 'production') {
-        console.error('Error:', {
-            message: err.message,
-            statusCode,
-            stack: err.stack,
-            timestamp: new Date().toISOString(),
-            path: req.path,
-            method: req.method
-        });
-    }
+    res.status(statusCode).json(problemDetails);
+};
+
+// Helper para títulos estándar HTTP
+const getTitleForStatus = (status) => {
+    const titles = {
+        400: 'Bad Request',
+        401: 'Unauthorized',
+        402: 'Payment Required',
+        403: 'Forbidden',
+        404: 'Not Found',
+        409: 'Conflict',
+        422: 'Unprocessable Entity',
+        429: 'Too Many Requests',
+        500: 'Internal Server Error',
+        503: 'Service Unavailable'
+    };
+    return titles[status] || 'Unknown Error';
 };
 
 module.exports = errorHandler;

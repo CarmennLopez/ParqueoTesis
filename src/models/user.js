@@ -1,6 +1,7 @@
-// src/models/User.js
+// src/models/user.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt'); // Necesario para encriptar la contraseña
+const bcrypt = require('bcrypt');
+const { USER_ROLES } = require('../config/constants');
 
 const UserSchema = new mongoose.Schema({
     name: {
@@ -13,7 +14,7 @@ const UserSchema = new mongoose.Schema({
         required: true,
         unique: true,
         trim: true,
-        lowercase: true // Convierte el email a minúsculas
+        lowercase: true
     },
     password: {
         type: String,
@@ -22,7 +23,7 @@ const UserSchema = new mongoose.Schema({
     },
     hasPaid: {
         type: Boolean,
-        default: false // Estado de pago para el parqueo (por defecto: no ha pagado)
+        default: false
     },
     cardId: {
         type: String,
@@ -35,35 +36,75 @@ const UserSchema = new mongoose.Schema({
         required: true,
         unique: true,
         trim: true,
-        uppercase: true // Convierte la matrícula a mayúsculas
+        uppercase: true
     },
+    // Datos de Facturación (FEL)
+    nit: {
+        type: String,
+        trim: true,
+        default: 'CF'
+    },
+    fiscalAddress: {
+        type: String,
+        trim: true,
+        default: 'Ciudad'
+    },
+    fiscalName: {
+        type: String,
+        trim: true
+    },
+
     currentParkingSpace: {
-        type: String, // Cambiado de Number a String para consistencia con ParkingLot
+        type: String,
         default: null
     },
     entryTime: {
         type: Date,
         default: null
     },
+    lastPaymentAmount: {
+        type: Number,
+        default: 0
+    },
+
+    // Suscripciones
+    subscriptionPlan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'PricingPlan',
+        default: null
+    },
+    subscriptionExpiresAt: {
+        type: Date,
+        default: null
+    },
+
+    // Auditoría
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
     role: {
         type: String,
-        enum: ['user', 'admin', 'operator'],
-        default: 'user' // Sistema de roles para autorización
+        enum: Object.values(USER_ROLES),
+        default: USER_ROLES.STUDENT
+    },
+    refreshTokenVersion: {
+        type: Number,
+        default: 0
     }
 }, {
-    timestamps: true // Agrega campos createdAt y updatedAt automáticamente
+    timestamps: true
 });
 
-// Middleware PRE-SAVE: Encripta la contraseña antes de guardarla en la DB.
+// Middleware PRE-SAVE: Encripta la contraseña antes de guardarla
 UserSchema.pre('save', async function (next) {
-    // Solo encripta si la contraseña ha sido modificada (o es nueva)
     if (this.isModified('password')) {
         this.password = await bcrypt.hash(this.password, 10);
     }
     next();
 });
 
-// Método para comparar contraseñas (necesario para el login)
+// Método para comparar contraseñas
 UserSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };

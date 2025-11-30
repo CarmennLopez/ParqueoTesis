@@ -1,7 +1,21 @@
 // src/routes/parkingRoutes.js
 const express = require('express');
 const { protect } = require('../middleware/authMiddleware');
-const authorize = require('../middleware/authorize');
+const { authorize } = require('../middleware/roleMiddleware');
+const parkingController = require('../controllers/parkingController');
+const { USER_ROLES } = require('../config/constants');
+
+const router = express.Router();
+
+// ----------------------------------------------------------------------
+// RUTAS PRINCIPALES DEL FLUJO DE PARQUEO (Todas requieren autenticación JWT)
+// ----------------------------------------------------------------------
+
+/**
+// src/routes/parkingRoutes.js
+const express = require('express');
+const { protect } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/roleMiddleware');
 const parkingController = require('../controllers/parkingController');
 const { USER_ROLES } = require('../config/constants');
 
@@ -18,12 +32,18 @@ const router = express.Router();
  */
 router.post('/assign', protect, parkingController.assignSpace);
 
+const distributedRateLimit = require('../middleware/rateLimitMiddleware');
+
 /**
  * @route POST /api/parking/pay
  * @desc Simula el pago de la tarifa del parqueo
  * @access Private - Usuarios autenticados
  */
-router.post('/pay', protect, parkingController.payParking);
+router.post('/pay',
+    protect,
+    distributedRateLimit('pay', 3, 60), // Máx 3 intentos por minuto
+    parkingController.payParking
+);
 
 /**
  * @route POST /api/parking/release
@@ -39,8 +59,25 @@ router.post('/release', protect, parkingController.releaseSpace);
 /**
  * @route GET /api/parking/status
  * @desc Obtiene el estado actual de ocupación del parqueo
- * @access Private - Solo administradores
+ * @access Private - Admin, Guardias y Operadores
  */
-router.get('/status', protect, authorize(USER_ROLES.ADMIN, USER_ROLES.OPERATOR), parkingController.getParkingStatus);
+router.get('/status',
+    protect,
+    authorize(USER_ROLES.ADMIN, USER_ROLES.GUARD, USER_ROLES.FACULTY),
+    parkingController.getParkingStatus
+);
+
+// Rutas protegidas por rol
+/**
+ * @route POST /api/parking/gate/open
+ * @desc Abre la barrera de entrada/salida del parqueo
+ * @access Private - Admin, Guardias, Operadores, Docentes, Estudiantes
+ */
+router.post('/gate/open',
+    protect,
+    authorize(USER_ROLES.ADMIN, USER_ROLES.GUARD, USER_ROLES.FACULTY, USER_ROLES.STUDENT),
+    distributedRateLimit('gate_open', 5, 60), // Máx 5 aperturas por minuto
+    parkingController.openGate
+);
 
 module.exports = router;

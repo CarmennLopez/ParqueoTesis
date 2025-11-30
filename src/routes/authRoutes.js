@@ -71,17 +71,165 @@ const loginValidation = [
 ];
 
 /**
- * @route POST /api/auth/register
- * @desc Registrar un nuevo usuario
- * @access Public
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     tags:
+ *       - Autenticación
+ *     summary: Registrar un nuevo usuario
+ *     description: Crea una nueva cuenta de usuario en el sistema
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *               - cardId
+ *               - vehiclePlate
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Juan Pérez
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: juan@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: Password123
+ *               cardId:
+ *                 type: string
+ *                 example: CARD12345
+ *               vehiclePlate:
+ *                 type: string
+ *                 example: ABC1234
+ *               role:
+ *                 type: string
+ *                 enum: [student, faculty, visitor, guard, admin]
+ *                 example: student
+ *     responses:
+ *       201:
+ *         description: Usuario creado exitosamente
+ *       400:
+ *         description: Datos inválidos o usuario ya existe
  */
 router.post('/register', registerValidation, handleValidationErrors, authController.register);
 
 /**
- * @route POST /api/auth/login
- * @desc Iniciar sesión
- * @access Public
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     tags:
+ *       - Autenticación
+ *     summary: Iniciar sesión
+ *     description: Autenticar usuario y obtener tokens JWT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: juan@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 example: Password123
+ *     responses:
+ *       200:
+ *         description: Login exitoso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       401:
+ *         description: Credenciales inválidas
  */
 router.post('/login', loginLimiter, loginValidation, handleValidationErrors, authController.login);
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     tags:
+ *       - Autenticación
+ *     summary: Renovar Access Token
+ *     description: Obtener un nuevo Access Token usando el Refresh Token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Token renovado exitosamente
+ *       403:
+ *         description: Refresh Token inválido o expirado
+ */
+router.post('/refresh', authController.refreshToken);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     tags:
+ *       - Autenticación
+ *     summary: Cerrar sesión
+ *     description: Revocar el Refresh Token del usuario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Sesión cerrada exitosamente
+ */
+router.post('/logout', authController.logout);
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     tags:
+ *       - Autenticación
+ *     summary: Obtener perfil del usuario actual
+ *     description: Devuelve la información del usuario autenticado
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil del usuario
+ *       401:
+ *         description: No autenticado
+ *       404:
+ *         description: Usuario no encontrado
+ */
+const { protect } = require('../middleware/authMiddleware');
+router.get('/me', protect, authController.getMe);
 
 module.exports = router;
