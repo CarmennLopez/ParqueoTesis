@@ -54,6 +54,11 @@ const UserSchema = new mongoose.Schema({
         trim: true
     },
 
+    currentParkingLot: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ParkingLot',
+        default: null
+    },
     currentParkingSpace: {
         type: String,
         default: null

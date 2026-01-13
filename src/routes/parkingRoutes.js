@@ -22,6 +22,17 @@ const { USER_ROLES } = require('../config/constants');
 const router = express.Router();
 
 // ----------------------------------------------------------------------
+// RUTAS DE INFORMACIÓN DE PARQUEOS
+// ----------------------------------------------------------------------
+
+/**
+ * @route GET /api/parking/lots
+ * @desc Lista todos los parqueos disponibles con su estado
+ * @access Private - Usuarios autenticados
+ */
+router.get('/lots', protect, parkingController.getParkingLots);
+
+// ----------------------------------------------------------------------
 // RUTAS PRINCIPALES DEL FLUJO DE PARQUEO (Todas requieren autenticación JWT)
 // ----------------------------------------------------------------------
 

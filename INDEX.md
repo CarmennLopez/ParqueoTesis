@@ -23,7 +23,8 @@ curl http://localhost:3000/health/liveness
 ### Para Desarrollador Activo
 1. **[TESTING.md](TESTING.md)** - Cómo escribir y ejecutar tests
 2. **[SECURITY.md](SECURITY.md)** - Seguridad y mejores prácticas
-3. **[API Documentation](swagger.yml)** (swagger en `/api-docs`)
+3. **[MULTI_PARKING.md](MULTI_PARKING.md)** - Soporte para múltiples parqueos
+4. **[API Documentation](swagger.yml)** (swagger en `/api-docs`)
 
 ### Para DevOps/Cloud
 1. **[DEPLOYMENT.md](DEPLOYMENT.md)** - Despliegue local, Docker, producción
@@ -49,6 +50,7 @@ TesisProyect/
 │   ├── DEPLOYMENT.md                # Despliegue y producción
 │   ├── CHANGELOG.md                 # Historial de cambios
 │   ├── IMPROVEMENTS-SUMMARY.md      # Resumen v1.1.0
+│   ├── MULTI_PARKING.md             # Soporte múltiples parqueos
 │   ├── DATABASE.md                  # MongoDB setup
 │   ├── INSTALL.md                   # Instalación detallada
 │   ├── MANUAL_POSTMAN.md            # Testing manual con Postman
