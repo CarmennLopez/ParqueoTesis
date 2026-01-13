@@ -1,0 +1,38 @@
+{"level":"info","message":"🔧 MQTT Service iniciado en MODO SIMULACIÓN","service":"parking-service","timestamp":"2026-01-12 19:55:16"}
+{"level":"info","message":"🚀 Servidor escuchando en http://localhost:3000","service":"parking-service","timestamp":"2026-01-12 19:55:17"}
+{"level":"info","message":"📝 Modo: development","service":"parking-service","timestamp":"2026-01-12 19:55:17"}
+{"level":"info","message":"🔌 Socket.io listo para conexiones","service":"parking-service","timestamp":"2026-01-12 19:55:17"}
+{"level":"info","message":"✅ Conectado a la base de datos de MongoDB","service":"parking-service","timestamp":"2026-01-12 19:55:21"}
+{"level":"info","message":"Conexión Redis cerrada correctamente","service":"parking-service","timestamp":"2026-01-12 19:55:38"}
+{"level":"info","message":"🔧 MQTT Service iniciado en MODO SIMULACIÓN","service":"parking-service","timestamp":"2026-01-12 19:55:51"}
+{"level":"info","message":"🚀 Servidor escuchando en http://localhost:3000","service":"parking-service","timestamp":"2026-01-12 19:55:52"}
+{"level":"info","message":"📝 Modo: development","service":"parking-service","timestamp":"2026-01-12 19:55:52"}
+{"level":"info","message":"🔌 Socket.io listo para conexiones","service":"parking-service","timestamp":"2026-01-12 19:55:52"}
+{"level":"info","message":"✅ Conectado a la base de datos de MongoDB","service":"parking-service","timestamp":"2026-01-12 19:55:53"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 19:56:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 19:57:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 19:58:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 19:59:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:00:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:01:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:02:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:03:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:04:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:05:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:06:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:07:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:08:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:09:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:10:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:11:52"}
+{"level":"info","message":"⏳ Verificando expiraciones de parqueo...","service":"parking-service","timestamp":"2026-01-12 20:12:52"}
+{"level":"info","message":"🔧 MQTT Service iniciado en MODO SIMULACIÓN","service":"parking-service","timestamp":"2026-01-12 20:13:14"}
+{"level":"info","message":"🚀 Servidor escuchando en http://localhost:3000","service":"parking-service","timestamp":"2026-01-12 20:13:15"}
+{"level":"info","message":"📝 Modo: development","service":"parking-service","timestamp":"2026-01-12 20:13:15"}
+{"level":"info","message":"🔌 Socket.io listo para conexiones","service":"parking-service","timestamp":"2026-01-12 20:13:15"}
+{"level":"info","message":"✅ Conectado a la base de datos de MongoDB","service":"parking-service","timestamp":"2026-01-12 20:13:16"}
+{"level":"info","message":"🔧 MQTT Service iniciado en MODO SIMULACIÓN","service":"parking-service","timestamp":"2026-01-12 20:21:00"}
+{"level":"info","message":"🚀 Servidor escuchando en http://localhost:3000","service":"parking-service","timestamp":"2026-01-12 20:21:01"}
+{"level":"info","message":"📝 Modo: development","service":"parking-service","timestamp":"2026-01-12 20:21:01"}
+{"level":"info","message":"🔌 Socket.io listo para conexiones","service":"parking-service","timestamp":"2026-01-12 20:21:01"}
+{"level":"info","message":"✅ Conectado a la base de datos de MongoDB","service":"parking-service","timestamp":"2026-01-12 20:21:02"}

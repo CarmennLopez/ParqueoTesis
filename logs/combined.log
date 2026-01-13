@@ -1,0 +1,136 @@
+2025-11-22 00:18:32 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-22 00:18:32 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-22 00:18:33 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:13:12 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:13:12 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:13:12 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:13:12 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:13:12 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:13:12 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:13:13 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:14:05 [32minfo[39m: [32mConexión Redis cerrada correctamente[39m
+2025-11-27 00:15:34 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:15:34 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:15:34 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:15:34 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:15:34 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:15:34 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:15:35 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:18:11 [32minfo[39m: [32mConexión Redis cerrada correctamente[39m
+2025-11-27 00:23:59 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:23:59 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:23:59 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:23:59 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:23:59 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:23:59 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:24:00 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:24:54 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:24:54 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:24:54 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:24:54 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:24:54 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:24:54 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:24:55 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:25:33 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:25:33 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:25:33 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:25:33 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:25:33 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:25:33 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:25:34 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:31:15 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:31:15 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:31:15 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:31:15 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:31:15 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:31:15 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:31:16 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:31:17 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:31:17 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:31:17 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:31:17 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:31:17 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:31:17 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:31:18 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:32:25 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:32:25 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:32:25 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:32:25 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:32:25 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:32:25 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:32:27 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:34:42 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:34:42 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:34:42 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:34:42 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:34:42 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:34:42 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:34:43 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:34:44 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:34:44 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:34:44 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:34:44 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:34:44 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:34:44 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:34:45 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:37:10 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:37:10 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:37:10 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:37:10 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:37:10 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:37:10 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:37:12 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:41:21 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:41:21 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:41:21 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:41:21 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:41:21 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:41:21 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:41:22 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:41:27 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:41:27 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:41:27 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:41:27 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:41:27 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:41:27 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:41:28 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:42:14 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:42:14 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:42:14 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:42:14 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:42:14 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:42:14 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:42:15 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:42:21 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:42:21 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:42:21 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:42:21 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:42:21 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:42:21 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:42:22 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:48:38 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:48:38 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:48:39 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:48:39 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:48:39 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:48:39 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:48:40 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:48:45 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:48:45 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:48:45 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:48:45 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:48:45 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:48:45 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:48:46 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 00:49:18 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 00:49:18 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 00:49:18 [32minfo[39m: [32m🔗 Conectando a Redis/Memurai...[39m
+2025-11-27 00:49:18 [32minfo[39m: [32m✅ Redis conectado y listo[39m
+2025-11-27 00:49:18 [32minfo[39m: [32mCliente Redis inicializado correctamente[39m
+2025-11-27 00:49:18 [32minfo[39m: [32m✅ Conectado a Redis/Memurai correctamente[39m
+2025-11-27 00:49:19 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
+2025-11-27 01:13:00 [32minfo[39m: [32m🔧 MQTT Service iniciado en MODO SIMULACIÓN[39m
+2025-11-27 01:13:01 [32minfo[39m: [32m🚀 Servidor escuchando en http://localhost:3000[39m
+2025-11-27 01:13:01 [32minfo[39m: [32m📝 Modo: development[39m
+2025-11-27 01:13:01 [32minfo[39m: [32m🔌 Socket.io listo para conexiones[39m
+2025-11-27 01:13:02 [32minfo[39m: [32m✅ Conectado a la base de datos de MongoDB[39m
