@@ -1,15 +1,28 @@
 version: '3.8'
-
 services:
-  # Backend API
-  api:
-    build: .
+  # Nuevo servicio para el API Gateway de .NET
+  gateway:
+    build:
+      context: ./csharp-gateway/ApiGatewayProject # Ruta al proyecto de .NET
+    ports:
+      - "5000:8080" # Exponemos el puerto 5000 del host al 8080 del contenedor
+    networks:
+      - app-network
+    depends_on:
+      - app-backend
+
+  # Tu aplicación actual de Node.js
+  app-backend:
+    build:
+      context: ./nodejs-backend # Ruta a la carpeta de tu proyecto Node.js
     container_name: parking-backend
     restart: always
-    ports:
-      - "3000:3000"
+    # El puerto 3000 ya no necesita ser expuesto al host,
+    # solo necesita ser accesible por otros contenedores en la red.
+    # ports:
+    #  - "3000:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development # Cambiado a development para entorno local
       - PORT=3000
       - MONGODB_URI=mongodb://mongo:27017/parking_db
       - REDIS_HOST=redis
@@ -20,7 +33,7 @@ services:
       - mongo
       - redis
     networks:
-      - parking-net
+      - app-network
 
   # Base de Datos MongoDB
   mongo:
@@ -32,7 +45,7 @@ services:
     volumes:
       - mongo_data:/data/db
     networks:
-      - parking-net
+      - app-network # Cambiado de parking-net a app-network
 
   # Caché Redis
   redis:
@@ -44,10 +57,10 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - parking-net
+      - app-network # Cambiado de parking-net a app-network
 
 networks:
-  parking-net:
+  app-network: # Cambiado de parking-net a app-network
     driver: bridge
 
 volumes:
