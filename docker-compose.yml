@@ -6,6 +6,11 @@ services:
       context: ./csharp-gateway/ApiGatewayProject # Ruta al proyecto de .NET
     ports:
       - "5000:8080" # Exponemos el puerto 5000 del host al 8080 del contenedor
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - JWT_SECRET=${JWT_SECRET:-supersecretkey_change_in_production}
+      - JWT_ISSUER=parking-api
+      - JWT_AUDIENCE=parking-users
     networks:
       - app-network
     depends_on:
@@ -17,10 +22,10 @@ services:
       context: ./nodejs-backend # Ruta a la carpeta de tu proyecto Node.js
     container_name: parking-backend
     restart: always
-    # El puerto 3000 ya no necesita ser expuesto al host,
-    # solo necesita ser accesible por otros contenedores en la red.
+    # El puerto 3000 NO se expone al host
+    # Todas las peticiones deben ir a través del API Gateway (puerto 5000)
     # ports:
-    #  - "3000:3000"
+    #   - "3000:3000"
     environment:
       - NODE_ENV=development # Cambiado a development para entorno local
       - PORT=3000

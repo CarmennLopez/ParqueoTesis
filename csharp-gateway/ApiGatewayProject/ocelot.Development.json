@@ -1,0 +1,125 @@
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/auth/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "app-backend",
+          "Port": 3000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/auth/{everything}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch"
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/parking/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "app-backend",
+          "Port": 3000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/parking/{everything}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch"
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/health/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "app-backend",
+          "Port": 3000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/health/{everything}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch"
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/invoice/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "app-backend",
+          "Port": 3000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/invoice/{everything}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch"
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/iot/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "app-backend",
+          "Port": 3000
+        }
+      ],
+      "UpstreamPathTemplate": "/api/iot/{everything}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch"
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api-docs/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "app-backend",
+          "Port": 3000
+        }
+      ],
+      "UpstreamPathTemplate": "/api-docs/{everything}",
+      "UpstreamHttpMethod": [
+        "Get"
+      ]
+    },
+    {
+      "DownstreamPathTemplate": "/api-docs.json",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "app-backend",
+          "Port": 3000
+        }
+      ],
+      "UpstreamPathTemplate": "/api-docs.json",
+      "UpstreamHttpMethod": [
+        "Get"
+      ]
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:5000"
+  }
+}

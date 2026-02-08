@@ -1,0 +1,59 @@
+# Archivos de documentación temporal
+SOLUCION_*.md
+RESUMEN_*.md
+MEJORAS_*.md
+ARQUITECTURA_*.md
+GUIA_*.md
+ENDPOINTS_*.md
+
+# Manual de inicio (si prefieres no versionarlo)
+# MANUAL_DE_INICIO.md
+
+# Logs
+logs/
+*.log
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+.vs/
+
+# Docker
+.dockerignore
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MongoDB
+mongo_data/
+
+# Redis
+redis_data/
+
+#Documentacion
+MEJORAS_IMPLEMETADAS.md
+RESUMEN_CAMBIOS.md
+COMO_USAR_PRODUCCION.md
+

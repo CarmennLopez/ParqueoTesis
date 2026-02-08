@@ -1,0 +1,116 @@
+{
+    "Routes": [
+        {
+            "DownstreamPathTemplate": "/auth/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/auth/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ]
+        },
+        {
+            "DownstreamPathTemplate": "/parking/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/parking/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ]
+        },
+        {
+            "DownstreamPathTemplate": "/health/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/health/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ]
+        },
+        {
+            "DownstreamPathTemplate": "/invoice/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/invoice/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ]
+        },
+        {
+            "DownstreamPathTemplate": "/iot/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/iot/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ]
+        },
+        {
+            "NOTA": "PLANTILLA PARA SEGUNDO BACKEND - Copia este bloque y modifica según necesites",
+            "DownstreamPathTemplate": "/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "NOMBRE-DEL-SERVICIO-EN-DOCKER",
+                    "Port": 4000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/RUTA-NUEVA/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ]
+        }
+    ],
+    "GlobalConfiguration": {
+        "BaseUrl": "http://localhost:5000"
+    }
+}

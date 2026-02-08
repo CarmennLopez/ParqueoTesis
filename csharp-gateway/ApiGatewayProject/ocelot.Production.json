@@ -1,0 +1,157 @@
+{
+    "Routes": [
+        {
+            "DownstreamPathTemplate": "/auth/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/auth/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ],
+            "RateLimitOptions": {
+                "ClientWhitelist": [],
+                "EnableRateLimiting": true,
+                "Period": "1m",
+                "PeriodTimespan": 60,
+                "Limit": 10
+            }
+        },
+        {
+            "DownstreamPathTemplate": "/parking/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/parking/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ],
+            "AuthenticationOptions": {
+                "AuthenticationProviderKey": "Bearer",
+                "AllowedScopes": []
+            },
+            "RateLimitOptions": {
+                "ClientWhitelist": [],
+                "EnableRateLimiting": true,
+                "Period": "1m",
+                "PeriodTimespan": 60,
+                "Limit": 100
+            }
+        },
+        {
+            "DownstreamPathTemplate": "/health/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/health/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ]
+        },
+        {
+            "DownstreamPathTemplate": "/invoice/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/invoice/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ],
+            "AuthenticationOptions": {
+                "AuthenticationProviderKey": "Bearer",
+                "AllowedScopes": []
+            }
+        },
+        {
+            "DownstreamPathTemplate": "/iot/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api/iot/{everything}",
+            "UpstreamHttpMethod": [
+                "Get",
+                "Post",
+                "Put",
+                "Delete",
+                "Patch"
+            ],
+            "AuthenticationOptions": {
+                "AuthenticationProviderKey": "Bearer",
+                "AllowedScopes": []
+            }
+        },
+        {
+            "DownstreamPathTemplate": "/api-docs/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api-docs/{everything}",
+            "UpstreamHttpMethod": [
+                "Get"
+            ]
+        },
+        {
+            "DownstreamPathTemplate": "/api-docs.json",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "app-backend",
+                    "Port": 3000
+                }
+            ],
+            "UpstreamPathTemplate": "/api-docs.json",
+            "UpstreamHttpMethod": [
+                "Get"
+            ]
+        }
+    ],
+    "GlobalConfiguration": {
+        "BaseUrl": "http://localhost:5000",
+        "RateLimitOptions": {
+            "DisableRateLimitHeaders": false,
+            "QuotaExceededMessage": "Demasiadas peticiones. Intenta de nuevo más tarde.",
+            "HttpStatusCode": 429,
+            "ClientIdHeader": "ClientId"
+        }
+    }
+}

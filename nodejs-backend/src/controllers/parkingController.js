@@ -20,7 +20,7 @@ const RATE_PER_HOUR = 10.00; // Tarifa base por hora
  */
 const getParkingLots = asyncHandler(async (req, res) => {
     const parkingLots = await ParkingLot.find()
-        .select('name location totalSpaces');
+        .select('name location totalSpaces spaces');
 
     if (!parkingLots || parkingLots.length === 0) {
         res.status(404);
@@ -337,7 +337,7 @@ const getParkingStatus = asyncHandler(async (req, res) => {
     // Soportar b├║squeda por ID o nombre (para compatibilidad)
     const { parkingLotId, parkingLotName } = req.query;
     let query = {};
-    
+
     if (parkingLotId) {
         query._id = parkingLotId;
     } else if (parkingLotName) {
