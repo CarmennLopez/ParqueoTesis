@@ -1,4 +1,4 @@
-// src/models/user.js
+﻿// src/models/user.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const { USER_ROLES } = require('../config/constants');
@@ -38,7 +38,7 @@ const UserSchema = new mongoose.Schema({
         trim: true,
         uppercase: true
     },
-    // Datos de Facturación (FEL)
+    // Datos de Facturaci├│n (FEL)
     nit: {
         type: String,
         trim: true,
@@ -54,6 +54,11 @@ const UserSchema = new mongoose.Schema({
         trim: true
     },
 
+    currentParkingLot: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ParkingLot',
+        default: null
+    },
     currentParkingSpace: {
         type: String,
         default: null
@@ -78,7 +83,7 @@ const UserSchema = new mongoose.Schema({
         default: null
     },
 
-    // Auditoría
+    // Auditor├¡a
     createdAt: {
         type: Date,
         default: Date.now
@@ -96,7 +101,7 @@ const UserSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Middleware PRE-SAVE: Encripta la contraseña antes de guardarla
+// Middleware PRE-SAVE: Encripta la contrase├▒a antes de guardarla
 UserSchema.pre('save', async function (next) {
     if (this.isModified('password')) {
         this.password = await bcrypt.hash(this.password, 10);
@@ -104,7 +109,7 @@ UserSchema.pre('save', async function (next) {
     next();
 });
 
-// Método para comparar contraseñas
+// M├⌐todo para comparar contrase├▒as
 UserSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };

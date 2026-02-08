@@ -1,4 +1,4 @@
-// src/routes/parkingRoutes.js
+﻿// src/routes/parkingRoutes.js
 const express = require('express');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
@@ -8,7 +8,7 @@ const { USER_ROLES } = require('../config/constants');
 const router = express.Router();
 
 // ----------------------------------------------------------------------
-// RUTAS PRINCIPALES DEL FLUJO DE PARQUEO (Todas requieren autenticación JWT)
+// RUTAS PRINCIPALES DEL FLUJO DE PARQUEO (Todas requieren autenticaci├│n JWT)
 // ----------------------------------------------------------------------
 
 /**
@@ -22,7 +22,18 @@ const { USER_ROLES } = require('../config/constants');
 const router = express.Router();
 
 // ----------------------------------------------------------------------
-// RUTAS PRINCIPALES DEL FLUJO DE PARQUEO (Todas requieren autenticación JWT)
+// RUTAS DE INFORMACI├ôN DE PARQUEOS
+// ----------------------------------------------------------------------
+
+/**
+ * @route GET /api/parking/lots
+ * @desc Lista todos los parqueos disponibles con su estado
+ * @access Private - Usuarios autenticados
+ */
+router.get('/lots', protect, parkingController.getParkingLots);
+
+// ----------------------------------------------------------------------
+// RUTAS PRINCIPALES DEL FLUJO DE PARQUEO (Todas requieren autenticaci├│n JWT)
 // ----------------------------------------------------------------------
 
 /**
@@ -41,7 +52,7 @@ const distributedRateLimit = require('../middleware/rateLimitMiddleware');
  */
 router.post('/pay',
     protect,
-    distributedRateLimit('pay', 3, 60), // Máx 3 intentos por minuto
+    distributedRateLimit('pay', 3, 60), // M├íx 3 intentos por minuto
     parkingController.payParking
 );
 
@@ -53,12 +64,12 @@ router.post('/pay',
 router.post('/release', protect, parkingController.releaseSpace);
 
 // ----------------------------------------------------------------------
-// RUTA DE ADMINISTRACIÓN / DASHBOARD
+// RUTA DE ADMINISTRACI├ôN / DASHBOARD
 // ----------------------------------------------------------------------
 
 /**
  * @route GET /api/parking/status
- * @desc Obtiene el estado actual de ocupación del parqueo
+ * @desc Obtiene el estado actual de ocupaci├│n del parqueo
  * @access Private - Admin, Guardias y Operadores
  */
 router.get('/status',
@@ -76,7 +87,7 @@ router.get('/status',
 router.post('/gate/open',
     protect,
     authorize(USER_ROLES.ADMIN, USER_ROLES.GUARD, USER_ROLES.FACULTY, USER_ROLES.STUDENT),
-    distributedRateLimit('gate_open', 5, 60), // Máx 5 aperturas por minuto
+    distributedRateLimit('gate_open', 5, 60), // M├íx 5 aperturas por minuto
     parkingController.openGate
 );
 

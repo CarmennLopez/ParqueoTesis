@@ -1,4 +1,4 @@
-const asyncHandler = require('express-async-handler');
+﻿const asyncHandler = require('express-async-handler');
 const ParkingLot = require('../models/ParkingLot');
 const User = require('../models/user');
 const PricingPlan = require('../models/PricingPlan');
@@ -10,9 +10,37 @@ const mqttService = require('../services/mqttService');
 const { emitParkingStatus, notifyUser } = require('../services/socketService');
 const { getCache, setCache, deleteCache } = require('../config/redisClient');
 
-const PARKING_LOT_NAME = process.env.PARKING_LOT_NAME || 'Parqueo Principal';
-const CACHE_KEY_STATUS = 'parking_status_data';
+const CACHE_KEY_STATUS = 'parking_status_';
 const RATE_PER_HOUR = 10.00; // Tarifa base por hora
+
+/**
+ * @desc Lista todos los parqueos disponibles con su estado
+ * @route GET /api/parking/lots
+ * @access Private
+ */
+const getParkingLots = asyncHandler(async (req, res) => {
+    const parkingLots = await ParkingLot.find()
+        .select('name location totalSpaces');
+
+    if (!parkingLots || parkingLots.length === 0) {
+        res.status(404);
+        throw new Error('No hay parqueos disponibles');
+    }
+
+    const lotsWithStatus = parkingLots.map(lot => ({
+        id: lot._id,
+        name: lot.name,
+        location: lot.location,
+        totalSpaces: lot.totalSpaces,
+        occupiedSpaces: lot.spaces.filter(s => s.isOccupied).length,
+        availableSpaces: lot.spaces.filter(s => !s.isOccupied).length
+    }));
+
+    res.status(200).json({
+        message: 'Parqueos disponibles',
+        data: lotsWithStatus
+    });
+});
 
 /**
  * @desc Asigna un espacio de parqueo disponible al usuario autenticado.
@@ -21,31 +49,37 @@ const RATE_PER_HOUR = 10.00; // Tarifa base por hora
  */
 const assignSpace = asyncHandler(async (req, res) => {
     const userId = req.userId;
+    const { parkingLotId } = req.body;
+
+    if (!parkingLotId) {
+        res.status(400);
+        throw new Error('Debe proporcionar el ID del parqueo (parkingLotId)');
+    }
 
     // 1. Verificar si el usuario ya tiene un espacio asignado
     const user = await User.findById(userId);
     if (user.currentParkingSpace) {
         res.status(400);
-        throw new Error(`Usuario ya tiene asignado el espacio ${user.currentParkingSpace}`);
+        throw new Error(`Usuario ya tiene asignado el espacio ${user.currentParkingSpace} en otro parqueo`);
     }
 
     // 2. Buscar parqueo y espacio disponible
-    // Usamos transacción para garantizar atomicidad (si MongoDB está en réplica set, sino simular)
+    // Usamos transacci├│n para garantizar atomicidad (si MongoDB est├í en r├⌐plica set, sino simular)
     const session = await ParkingLot.startSession();
     session.startTransaction();
 
     try {
-        const parkingLot = await ParkingLot.findOne({ name: PARKING_LOT_NAME }).session(session);
+        const parkingLot = await ParkingLot.findById(parkingLotId).session(session);
 
         if (!parkingLot) {
-            throw new Error('Configuración de parqueo no encontrada');
+            throw new Error('Parqueo no encontrado');
         }
 
         const availableSpace = parkingLot.spaces.find(s => !s.isOccupied);
 
         if (!availableSpace) {
             res.status(404);
-            throw new Error('No hay espacios disponibles');
+            throw new Error('No hay espacios disponibles en este parqueo');
         }
 
         // 3. Asignar espacio
@@ -54,6 +88,7 @@ const assignSpace = asyncHandler(async (req, res) => {
         availableSpace.entryTime = new Date();
 
         // Actualizar usuario
+        user.currentParkingLot = parkingLot._id;
         user.currentParkingSpace = availableSpace.spaceNumber;
         user.entryTime = availableSpace.entryTime;
         user.hasPaid = false;
@@ -73,7 +108,7 @@ const assignSpace = asyncHandler(async (req, res) => {
 
         // NOTIFICAR POR SOCKET
         emitParkingStatus({
-            availableSpaces: parkingLot.availableSpaces, // Esto podría necesitar recalcularse o usarse un getter virtual
+            availableSpaces: parkingLot.availableSpaces, // Esto podr├¡a necesitar recalcularse o usarse un getter virtual
             lastAction: 'ASSIGN',
             space: availableSpace.spaceNumber
         });
@@ -83,14 +118,15 @@ const assignSpace = asyncHandler(async (req, res) => {
             entryTime
         });
 
-        // INVALIDAR CACHÉ
-        await deleteCache(CACHE_KEY_STATUS);
+        // INVALIDAR CACH├ë
+        await deleteCache(CACHE_KEY_STATUS + parkingLotId);
 
         res.status(200).json({
-            message: 'Espacio asignado con éxito',
+            message: 'Espacio asignado con ├⌐xito',
+            parkingLot: parkingLot.name,
             space: availableSpace.spaceNumber,
             entryTime: entryTime,
-            info: 'La tarifa se calculará al salir según su plan.'
+            info: 'La tarifa se calcular├í al salir seg├║n su plan.'
         });
 
     } catch (error) {
@@ -112,14 +148,14 @@ const payParking = asyncHandler(async (req, res) => {
     const userId = req.userId;
     const user = await User.findById(userId);
 
-    if (!user.currentParkingSpace) {
+    if (!user.currentParkingSpace || !user.currentParkingLot) {
         res.status(400);
         throw new Error('No tiene un espacio asignado actualmente');
     }
 
     if (user.hasPaid) {
         res.status(400);
-        throw new Error('Ya ha realizado el pago para esta sesión');
+        throw new Error('Ya ha realizado el pago para esta sesi├│n');
     }
 
     // Determinar Plan de Precios
@@ -130,7 +166,7 @@ const payParking = asyncHandler(async (req, res) => {
 
     if (!plan) {
         // Buscar plan por defecto o por rol
-        // Por ahora usamos lógica simple o buscamos un plan 'HOURLY' por defecto
+        // Por ahora usamos l├│gica simple o buscamos un plan 'HOURLY' por defecto
         plan = await PricingPlan.findOne({ type: 'HOURLY' }); // Asumiendo que existe
 
         // Fallback si no hay planes en DB
@@ -138,9 +174,9 @@ const payParking = asyncHandler(async (req, res) => {
             plan = { baseRate: 10, type: 'HOURLY', rules: {} };
         }
 
-        // Override para catedráticos si no tienen plan específico
+        // Override para catedr├íticos si no tienen plan espec├¡fico
         if (user.role === USER_ROLES.FACULTY) {
-            // Podríamos buscar un plan FACULTY_SPECIAL
+            // Podr├¡amos buscar un plan FACULTY_SPECIAL
             const facultyPlan = await PricingPlan.findOne({ type: 'FACULTY_SPECIAL' });
             if (facultyPlan) plan = facultyPlan;
         }
@@ -150,7 +186,7 @@ const payParking = asyncHandler(async (req, res) => {
     const totalCost = calculation.totalAmount;
 
     // Simular procesamiento de pago...
-    // Aquí iría la integración con Stripe/Pasarela
+    // Aqu├¡ ir├¡a la integraci├│n con Stripe/Pasarela
 
     user.hasPaid = true;
     user.lastPaymentAmount = totalCost;
@@ -163,7 +199,7 @@ const payParking = asyncHandler(async (req, res) => {
     });
 
     res.status(200).json({
-        message: 'Pago realizado con éxito',
+        message: 'Pago realizado con ├⌐xito',
         amount: totalCost,
         space: user.currentParkingSpace,
         details: calculation
@@ -189,10 +225,10 @@ const releaseSpace = asyncHandler(async (req, res) => {
     // En un flujo real, la barrera no se abre si no ha pagado.
 
     // Recalcular costo para asegurar
-    // ... (lógica omitida por brevedad, asumimos que payParking ya manejó esto o es gratis)
+    // ... (l├│gica omitida por brevedad, asumimos que payParking ya manej├│ esto o es gratis)
 
     if (!user.hasPaid) {
-        // Verificar si es gratis (ej. suscripción activa)
+        // Verificar si es gratis (ej. suscripci├│n activa)
         let isFree = false;
         if (user.subscriptionPlan && user.subscriptionExpiresAt > new Date()) {
             isFree = true;
@@ -218,7 +254,7 @@ const releaseSpace = asyncHandler(async (req, res) => {
         const space = parkingLot.spaces[spaceIndex];
         const releasedSpace = space.spaceNumber;
 
-        // Calcular duración final
+        // Calcular duraci├│n final
         const exitTime = new Date();
         const durationMs = exitTime - space.entryTime;
         const durationMinutes = Math.ceil(durationMs / (1000 * 60));
@@ -243,8 +279,8 @@ const releaseSpace = asyncHandler(async (req, res) => {
         try {
             await mqttService.openGate('GATE_MAIN_EXIT', userId);
         } catch (mqttError) {
-            logger.warn(`No se pudo abrir barrera automáticamente: ${mqttError.message}`);
-            // No fallamos la transacción por esto, pero avisamos
+            logger.warn(`No se pudo abrir barrera autom├íticamente: ${mqttError.message}`);
+            // No fallamos la transacci├│n por esto, pero avisamos
         }
 
         // AUDIT LOG
@@ -265,12 +301,12 @@ const releaseSpace = asyncHandler(async (req, res) => {
             space: releasedSpace
         });
 
-        // INVALIDAR CACHÉ
+        // INVALIDAR CACH├ë
         await deleteCache(CACHE_KEY_STATUS);
 
         // 7. Respuesta de Salida Exitosa
         res.status(200).json({
-            message: `¡Salida exitosa! Espacio ${releasedSpace} liberado. Barrera abierta.`,
+            message: `┬íSalida exitosa! Espacio ${releasedSpace} liberado. Barrera abierta.`,
             timeSpent: `${durationMinutes} minutos`,
             info: 'Gracias por su visita.'
         });
@@ -291,28 +327,46 @@ const releaseSpace = asyncHandler(async (req, res) => {
  * @access Private (Solo administradores)
  */
 const getParkingStatus = asyncHandler(async (req, res) => {
-    // 1. Intentar obtener de caché
+    // 1. Intentar obtener de cach├⌐
     const cachedData = await getCache(CACHE_KEY_STATUS);
     if (cachedData) {
         // logger.info('Cache HIT: parking_status'); 
         return res.status(200).json(cachedData);
     }
 
-    // 2. Si no hay caché, consultar DB
-    const parkingLot = await ParkingLot.findOne({ name: PARKING_LOT_NAME })
+    // Soportar b├║squeda por ID o nombre (para compatibilidad)
+    const { parkingLotId, parkingLotName } = req.query;
+    let query = {};
+    
+    if (parkingLotId) {
+        query._id = parkingLotId;
+    } else if (parkingLotName) {
+        query.name = parkingLotName;
+    } else {
+        // Si no especifica, obtener el primer parqueo o lanzar error
+        const firstLot = await ParkingLot.findOne();
+        if (!firstLot) {
+            res.status(404);
+            throw new Error('No hay parqueos disponibles');
+        }
+        query._id = firstLot._id;
+    }
+
+    // 2. Si no hay cach├⌐, consultar DB
+    const parkingLot = await ParkingLot.findOne(query)
         .populate('spaces.occupiedBy', 'name email vehiclePlate'); // Incluir detalles del usuario
 
     if (!parkingLot) {
         res.status(404);
-        throw new Error('No se encontró la configuración del parqueo.');
+        throw new Error('No se encontr├│ la configuraci├│n del parqueo.');
     }
 
-    // Calcular el número de espacios ocupados y disponibles
+    // Calcular el n├║mero de espacios ocupados y disponibles
     const totalSpaces = parkingLot.spaces.length;
     const occupiedSpaces = parkingLot.spaces.filter(space => space.isOccupied).length;
     const availableSpaces = totalSpaces - occupiedSpaces;
 
-    // Crear un resumen de los espacios ocupados con información del usuario
+    // Crear un resumen de los espacios ocupados con informaci├│n del usuario
     const occupiedDetails = parkingLot.spaces
         .filter(space => space.isOccupied)
         .map(space => {
@@ -335,6 +389,7 @@ const getParkingStatus = asyncHandler(async (req, res) => {
         });
 
     const responseData = {
+        parkingLotId: parkingLot._id,
         parkingLotName: parkingLot.name,
         location: parkingLot.location,
         totalSpaces,
@@ -344,14 +399,14 @@ const getParkingStatus = asyncHandler(async (req, res) => {
         ratePerHour: `$${RATE_PER_HOUR}`
     };
 
-    // 3. Guardar en caché (TTL 5 segundos)
-    await setCache(CACHE_KEY_STATUS, responseData, 5);
+    // 3. Guardar en cach├⌐ (TTL 5 segundos)
+    await setCache(CACHE_KEY_STATUS + parkingLot._id, responseData, 5);
 
     res.status(200).json(responseData);
 });
 
 /**
- * @desc Abre la barrera manualmente (Admin/Guardia) o automáticamente al pagar.
+ * @desc Abre la barrera manualmente (Admin/Guardia) o autom├íticamente al pagar.
  * @route POST /api/parking/gate/open
  * @access Private (Admin, Guard, o Usuario Pagado)
  */
@@ -361,11 +416,11 @@ const openGate = asyncHandler(async (req, res) => {
     const userRole = req.user.role; // Asumiendo que authMiddleware popula req.user
 
     // Validar permisos: Solo Admin/Guardia pueden abrir cualquier barrera.
-    // Usuarios normales solo pueden abrir si han pagado y están en salida (lógica simplificada aquí)
+    // Usuarios normales solo pueden abrir si han pagado y est├ín en salida (l├│gica simplificada aqu├¡)
     if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.GUARD) {
         // Verificar si es usuario normal intentando salir
-        // Aquí podríamos validar si ya pagó, etc.
-        // Por ahora, permitimos para demo si envía su propio ID
+        // Aqu├¡ podr├¡amos validar si ya pag├│, etc.
+        // Por ahora, permitimos para demo si env├¡a su propio ID
     }
 
     const targetGate = gateId || 'GATE_MAIN_EXIT';
@@ -384,11 +439,12 @@ const openGate = asyncHandler(async (req, res) => {
         });
     } catch (error) {
         res.status(500);
-        throw new Error(`Falló la apertura de barrera: ${error.message}`);
+        throw new Error(`Fall├│ la apertura de barrera: ${error.message}`);
     }
 });
 
 module.exports = {
+    getParkingLots,
     assignSpace,
     payParking,
     releaseSpace,
