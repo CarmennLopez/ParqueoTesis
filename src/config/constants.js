@@ -32,5 +32,9 @@ module.exports = {
         FACULTY: 'faculty',  // Catedráticos y personal administrativo
         STUDENT: 'student',  // Estudiantes activos
         VISITOR: 'visitor'   // Visitantes externos
-    }
+    },
+
+    // Solvencia de parqueo
+    SOLVENCY_MONTHS: 1,     // Duración de la solvencia (pago mensual)
+    ROLES_EXEMPT_FROM_SOLVENCY: ['admin', 'guard', 'faculty', 'visitor']  // No requieren solvencia
 };

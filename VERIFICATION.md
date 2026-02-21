@@ -104,7 +104,7 @@ curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Usuario Prueba",
-    "email": "prueba@test.com",
+    "email": "prueba@miumg.edu.gt",
     "password": "Prueba123",
     "cardId": "CARD001",
     "vehiclePlate": "ABC123"
@@ -118,7 +118,7 @@ Esperado: Usuario creado exitosamente
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "prueba@test.com",
+    "email": "prueba@miumg.edu.gt",
     "password": "Prueba123"
   }'
 ```
@@ -162,12 +162,9 @@ Debe mostrar:
 
 Para probar el sistema de roles:
 
-1. Crea un usuario admin en MongoDB:
-```javascript
-db.users.updateOne(
-  { email: "prueba@test.com" },
-  { $set: { role: "admin" } }
-)
+1. Crea un usuario admin en PostgreSQL:
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'prueba@miumg.edu.gt';
 ```
 
 2. Intenta acceder al endpoint de status:

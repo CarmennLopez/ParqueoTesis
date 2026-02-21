@@ -1,752 +1,446 @@
 # Base de Datos - Sistema de Parqueo UMG
 
-**Motor**: MongoDB 7.0+  
-**ORM**: Mongoose 8.x  
-**Base de Datos**: `parqueo_umg`
+**Motor**: PostgreSQL 14+  
+**ORM**: Sequelize 6.x  
+**Base de Datos**: `parking_db`
 
 ---
 
 ## 📊 Esquema de la Base de Datos
 
-### Colecciones Principales
+### Tablas Principales
 
 1. **users** - Usuarios del sistema
-2. **parkinglots** - Lotes de parqueo
-3. **invoices** - Facturas generadas
-4. **pricingplans** - Planes de tarifas
-5. **auditlogs** - Registros de auditoría
-6. **refreshtokens** - Tokens de autenticación (Redis)
+2. **parking_lots** - Lotes de parqueo
+3. **parking_spaces** - Espacios individuales de parqueo
+4. **invoices** - Facturas generadas
+5. **pricing_plans** - Planes de tarifas
+6. **audit_logs** - Registros de auditoría
 
 ---
 
-## 1. Colección: `users`
+## 1. Tabla: `users`
 
-### Estructura del Documento
+### Estructura
 
-```javascript
-{
-  _id: ObjectId("692cb50d5b37a245f8e8b44a"),
-  name: "Juan Pérez",
-  email: "juan@test.com",
-  password: "$2b$10$encrypted_password_hash",
-  hasPaid: false,
-  cardId: "CARD001",
-  vehiclePlate: "ABC123",
-  nit: "CF",
-  fiscalAddress: "Ciudad",
-  fiscalName: null,
-  currentParkingSpace: null,
-  entryTime: null,
-  lastPaymentAmount: 0,
-  subscriptionPlan: null,
-  subscriptionExpiresAt: null,
-  role: "student",
-  refreshTokenVersion: 0,
-  createdAt: ISODate("2025-11-30T21:15:06.132Z"),
-  updatedAt: ISODate("2025-11-30T21:15:06.132Z")
-}
+```sql
+CREATE TABLE users (
+  id                     SERIAL PRIMARY KEY,
+  name                   VARCHAR(50)   NOT NULL,
+  email                  VARCHAR(100)  NOT NULL UNIQUE,
+  password               VARCHAR(255)  NOT NULL,
+  role                   VARCHAR(20)   NOT NULL DEFAULT 'student',
+  card_id                VARCHAR(20)   NOT NULL UNIQUE,
+  vehicle_plate          VARCHAR(10)   NOT NULL UNIQUE,
+  has_paid               BOOLEAN       NOT NULL DEFAULT FALSE,
+  nit                    VARCHAR(20)   DEFAULT 'CF',
+  fiscal_address         VARCHAR(255)  DEFAULT 'Ciudad',
+  fiscal_name            VARCHAR(100),
+  current_parking_lot_id INTEGER       REFERENCES parking_lots(id),
+  current_parking_space  VARCHAR(10),
+  entry_time             TIMESTAMPTZ,
+  last_payment_amount    DECIMAL(10,2) DEFAULT 0,
+  refresh_token_version  INTEGER       NOT NULL DEFAULT 0,
+  created_at             TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at             TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
 ```
 
 ### Campos
 
-| Campo | Tipo | Requerido | Descripción |
-|-------|------|-----------|-------------|
-| `_id` | ObjectId | Sí | ID único del usuario |
-| `name` | String | Sí | Nombre completo |
-| `email` | String | Sí | Email (único, lowercase) |
-| `password` | String | Sí | Contraseña encriptada con bcrypt |
-| `hasPaid` | Boolean | No | Si pagó su última sesión |
-| `cardId` | String | Sí | ID de tarjeta RFID (único) |
-| `vehiclePlate` | String | Sí | Placa del vehículo (único, uppercase) |
-| `nit` | String | No | NIT para facturación |
-| `fiscalAddress` | String | No | Dirección fiscal |
-| `fiscalName` | String | No | Nombre fiscal |
-| `currentParkingSpace` | String | No | Espacio actual (ej: "A1") |
-| `entryTime` | Date | No | Hora de entrada al parqueo |
-| `lastPaymentAmount` | Number | No | Último monto pagado |
-| `subscriptionPlan` | ObjectId | No | Referencia a PricingPlan |
-| `subscriptionExpiresAt` | Date | No | Fecha de expiración de suscripción |
-| `role` | String | Sí | Rol: student, faculty, visitor, guard, admin |
-| `refreshTokenVersion` | Number | No | Versión del refresh token |
-| `createdAt` | Date | Sí | Fecha de creación |
-| `updatedAt` | Date | Sí | Última actualización |
-
-### Índices
-
-```javascript
-// Índices únicos
-db.users.createIndex({ email: 1 }, { unique: true });
-db.users.createIndex({ cardId: 1 }, { unique: true });
-db.users.createIndex({ vehiclePlate: 1 }, { unique: true });
-
-// Índices de búsqueda
-db.users.createIndex({ role: 1 });
-db.users.createIndex({ currentParkingSpace: 1 });
-```
+| Campo | Tipo | Restricciones | Descripción |
+|-------|------|---------------|-------------|
+| `id` | SERIAL | PRIMARY KEY | ID único auto-incrementable |
+| `name` | VARCHAR(50) | NOT NULL | Nombre completo |
+| `email` | VARCHAR(100) | UNIQUE, NOT NULL | Email (debe ser @miumg.edu.gt) |
+| `password` | VARCHAR(255) | NOT NULL | Contraseña encriptada con bcrypt |
+| `has_paid` | BOOLEAN | DEFAULT FALSE | Si pagó su última sesión |
+| `card_id` | VARCHAR(20) | UNIQUE, NOT NULL | Carné de identificación |
+| `vehicle_plate` | VARCHAR(10) | UNIQUE, NOT NULL | Placa del vehículo (ej: UMG-001) |
+| `nit` | VARCHAR(20) | DEFAULT 'CF' | NIT para facturación |
+| `fiscal_address` | VARCHAR(255) | - | Dirección fiscal |
+| `fiscal_name` | VARCHAR(100) | - | Nombre fiscal |
+| `current_parking_lot_id` | INT FK | - | Lote actual |
+| `current_parking_space` | VARCHAR(10) | - | Espacio actual (ej: "A1") |
+| `entry_time` | TIMESTAMPTZ | - | Hora de entrada al parqueo |
+| `last_payment_amount` | DECIMAL(10,2) | DEFAULT 0 | Último monto pagado |
+| `refresh_token_version` | INTEGER | DEFAULT 0 | Versión del refresh token |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Última actualización |
 
 ### Queries Comunes
 
 #### Buscar usuario por email
-```javascript
-db.users.findOne({ email: "juan@test.com" });
+```sql
+SELECT * FROM users WHERE email = 'juan@miumg.edu.gt';
 ```
 
 #### Buscar usuarios con espacio asignado
-```javascript
-db.users.find({ currentParkingSpace: { $ne: null } });
+```sql
+SELECT * FROM users WHERE current_parking_space IS NOT NULL;
 ```
 
 #### Buscar usuarios que no han pagado
-```javascript
-db.users.find({ 
-  currentParkingSpace: { $ne: null },
-  hasPaid: false 
-});
+```sql
+SELECT * FROM users 
+WHERE current_parking_space IS NOT NULL AND has_paid = FALSE;
 ```
 
-#### Actualizar espacio de parqueo
-```javascript
-db.users.updateOne(
-  { _id: ObjectId("692cb50d5b37a245f8e8b44a") },
-  { 
-    $set: { 
-      currentParkingSpace: "A1",
-      entryTime: new Date(),
-      hasPaid: false 
-    }
-  }
-);
+#### Actualizar espacio de parqueo (entrada)
+```sql
+UPDATE users
+SET current_parking_space = 'A1',
+    current_parking_lot_id = 1,
+    entry_time = NOW(),
+    has_paid = FALSE
+WHERE id = 2;
 ```
 
-#### Liberar espacio de parqueo
-```javascript
-db.users.updateOne(
-  { _id: ObjectId("692cb50d5b37a245f8e8b44a") },
-  { 
-    $set: { 
-      currentParkingSpace: null,
-      entryTime: null,
-      hasPaid: true 
-    }
-  }
-);
+#### Liberar espacio de parqueo (salida)
+```sql
+UPDATE users
+SET current_parking_space = NULL,
+    current_parking_lot_id = NULL,
+    entry_time = NULL,
+    has_paid = FALSE,
+    last_payment_amount = 0
+WHERE id = 2;
 ```
 
 #### Crear usuario administrador
-```javascript
-db.users.updateOne(
-  { email: "admin@umg.edu.gt" },
-  { $set: { role: "admin" } }
-);
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'admin@miumg.edu.gt';
 ```
 
 #### Listar usuarios por rol
-```javascript
-db.users.find({ role: "student" }).sort({ createdAt: -1 });
+```sql
+SELECT * FROM users WHERE role = 'student' ORDER BY created_at DESC;
 ```
 
 ---
 
-## 2. Colección: `parkinglots`
+## 2. Tabla: `parking_lots`
 
-### Estructura del Documento
+### Estructura
 
-```javascript
-{
-  _id: ObjectId("692cb50d5b37a245f8e8b44b"),
-  name: "Parqueo Principal UMG",
-  location: {
-    type: "Point",
-    coordinates: [-90.506882, 14.634915]  // [longitud, latitud]
-  },
-  totalSpaces: 10,
-  availableSpaces: 7,
-  spaces: [
-    {
-      _id: ObjectId("692cb50d5b37a245f8e8b44c"),
-      spaceNumber: "A1",
-      isOccupied: true,
-      occupiedBy: ObjectId("692cb50d5b37a245f8e8b44a"),
-      entryTime: ISODate("2025-11-30T21:15:06.132Z")
-    },
-    {
-      _id: ObjectId("692cb50d5b37a245f8e8b44d"),
-      spaceNumber: "A2",
-      isOccupied: false,
-      occupiedBy: null,
-      entryTime: null
-    }
-  ],
-  createdAt: ISODate("2025-11-30T21:15:06.132Z"),
-  updatedAt: ISODate("2025-11-30T21:15:06.132Z")
-}
-```
-
-### Índices
-
-```javascript
-// Índice único por nombre
-db.parkinglots.createIndex({ name: 1 }, { unique: true });
-
-// Índice geoespacial para búsquedas de cercanía
-db.parkinglots.createIndex({ location: "2dsphere" });
+```sql
+CREATE TABLE parking_lots (
+  id               SERIAL PRIMARY KEY,
+  name             VARCHAR(100)  NOT NULL UNIQUE,
+  location         JSONB         NOT NULL DEFAULT '{"lat": 0, "lon": 0}',
+  total_spaces     INTEGER       NOT NULL,
+  available_spaces INTEGER       NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
 ```
 
 ### Queries Comunes
 
 #### Obtener estado del parqueo
-```javascript
-db.parkinglots.findOne({ name: "Parqueo Principal UMG" });
+```sql
+SELECT * FROM parking_lots WHERE name = 'Parqueo Principal UMG';
 ```
 
-#### Buscar espacios disponibles
-```javascript
-db.parkinglots.aggregate([
-  { $unwind: "$spaces" },
-  { $match: { "spaces.isOccupied": false } },
-  { $project: { spaceNumber: "$spaces.spaceNumber" } }
-]);
+#### Listar lotes con espacios disponibles
+```sql
+SELECT id, name, available_spaces, total_spaces
+FROM parking_lots
+WHERE available_spaces > 0
+ORDER BY available_spaces DESC;
 ```
 
-#### Asignar espacio a usuario
-```javascript
-db.parkinglots.updateOne(
-  { 
-    name: "Parqueo Principal UMG",
-    "spaces.spaceNumber": "A1"
-  },
-  { 
-    $set: { 
-      "spaces.$.isOccupied": true,
-      "spaces.$.occupiedBy": ObjectId("692cb50d5b37a245f8e8b44a"),
-      "spaces.$.entryTime": new Date()
-    },
-    $inc: { availableSpaces: -1 }
-  }
-);
+#### Actualizar espacios disponibles (al asignar)
+```sql
+UPDATE parking_lots
+SET available_spaces = available_spaces - 1,
+    updated_at = NOW()
+WHERE id = 1;
 ```
 
-#### Liberar espacio
-```javascript
-db.parkinglots.updateOne(
-  { 
-    name: "Parqueo Principal UMG",
-    "spaces.spaceNumber": "A1"
-  },
-  { 
-    $set: { 
-      "spaces.$.isOccupied": false,
-      "spaces.$.occupiedBy": null,
-      "spaces.$.entryTime": null
-    },
-    $inc: { availableSpaces: 1 }
-  }
-);
-```
-
-#### Buscar parqueos cercanos (búsqueda geoespacial)
-```javascript
-db.parkinglots.find({
-  location: {
-    $near: {
-      $geometry: {
-        type: "Point",
-        coordinates: [-90.506882, 14.634915]
-      },
-      $maxDistance: 1000 // metros
-    }
-  }
-});
+#### Actualizar espacios disponibles (al liberar)
+```sql
+UPDATE parking_lots
+SET available_spaces = available_spaces + 1,
+    updated_at = NOW()
+WHERE id = 1;
 ```
 
 ---
 
-## 3. Colección: `invoices`
+## 3. Tabla: `parking_spaces`
 
-### Estructura del Documento
+### Estructura
 
-```javascript
-{
-  _id: ObjectId("692cb60d5b37a245f8e8b55b"),
-  invoiceNumber: "INV-2025-001",
-  userId: ObjectId("692cb50d5b37a245f8e8b44a"),
-  amount: 15.50,
-  currency: "GTQ",
-  status: "PAID",
-  felData: {
-    authorizationUUID: "FEL-UUID-12345",
-    serie: "A",
-    number: "001",
-    certificationDate: ISODate("2025-11-30T22:30:15.456Z")
-  },
-  items: [
-    {
-      description: "Estacionamiento - Espacio A1",
-      quantity: 1,
-      unitPrice: 15.50,
-      total: 15.50
-    }
-  ],
-  pdfUrl: "/invoices/INV-2025-001.pdf",
-  createdAt: ISODate("2025-11-30T22:30:15.456Z"),
-  updatedAt: ISODate("2025-11-30T22:30:15.456Z")
-}
-```
-
-### Índices
-
-```javascript
-db.invoices.createIndex({ invoiceNumber: 1 }, { unique: true });
-db.invoices.createIndex({ userId: 1 });
-db.invoices.createIndex({ status: 1 });
-db.invoices.createIndex({ createdAt: -1 });
+```sql
+CREATE TABLE parking_spaces (
+  id                   SERIAL PRIMARY KEY,
+  lot_id               INTEGER      NOT NULL REFERENCES parking_lots(id),
+  space_number         VARCHAR(10)  NOT NULL,
+  is_available         BOOLEAN      NOT NULL DEFAULT TRUE,
+  occupied_by_user_id  INTEGER      REFERENCES users(id),
+  created_at           TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  UNIQUE (lot_id, space_number)
+);
 ```
 
 ### Queries Comunes
 
-#### Buscar facturas de un usuario
-```javascript
-db.invoices.find({ 
-  userId: ObjectId("692cb50d5b37a245f8e8b44a") 
-}).sort({ createdAt: -1 });
+#### Buscar un espacio disponible en un lote
+```sql
+SELECT * FROM parking_spaces
+WHERE lot_id = 1 AND is_available = TRUE
+ORDER BY space_number ASC
+LIMIT 1;
 ```
 
-#### Facturas por estado
-```javascript
-db.invoices.find({ status: "PAID" });
+#### Marcar espacio como ocupado
+```sql
+UPDATE parking_spaces
+SET is_available = FALSE,
+    occupied_by_user_id = 2,
+    updated_at = NOW()
+WHERE lot_id = 1 AND space_number = 'A1';
 ```
 
-#### Total facturado en un período
-```javascript
-db.invoices.aggregate([
-  {
-    $match: {
-      createdAt: {
-        $gte: ISODate("2025-11-01"),
-        $lte: ISODate("2025-11-30")
-      },
-      status: "PAID"
-    }
-  },
-  {
-    $group: {
-      _id: null,
-      totalAmount: { $sum: "$amount" },
-      count: { $sum: 1 }
-    }
-  }
-]);
-```
-
-#### Crear factura
-```javascript
-db.invoices.insertOne({
-  invoiceNumber: "INV-2025-002",
-  userId: ObjectId("692cb50d5b37a245f8e8b44a"),
-  amount: 15.50,
-  currency: "GTQ",
-  status: "PAID",
-  felData: {
-    authorizationUUID: "FEL-UUID-12346",
-    serie: "A",
-    number: "002",
-    certificationDate: new Date()
-  },
-  items: [
-    {
-      description: "Estacionamiento - 1.5 horas",
-      quantity: 1.5,
-      unitPrice: 10.00,
-      total: 15.00
-    }
-  ],
-  pdfUrl: "/invoices/INV-2025-002.pdf"
-});
+#### Liberar espacio
+```sql
+UPDATE parking_spaces
+SET is_available = TRUE,
+    occupied_by_user_id = NULL,
+    updated_at = NOW()
+WHERE lot_id = 1 AND space_number = 'A1';
 ```
 
 ---
 
-## 4. Colección: `pricingplans`
+## 4. Tabla: `pricing_plans`
 
-### Estructura del Documento
+### Estructura
 
-```javascript
-{
-  _id: ObjectId("692cb70d5b37a245f8e8b66c"),
-  code: "STANDARD_HOURLY",
-  name: "Tarifa Por Hora - Estudiantes",
-  type: "HOURLY",
-  baseRate: 10.00,
-  currency: "GTQ",
-  billingInterval: "HOUR",
-  description: "Tarifa estándar por hora para estudiantes",
-  isActive: true,
-  rules: {
-    gracePeriodMinutes: 15,
-    maxDailyCap: 50.00,
-    weekendMultiplier: 1.0
-  },
-  createdAt: ISODate("2025-11-30T21:15:06.132Z"),
-  updatedAt: ISODate("2025-11-30T21:15:06.132Z")
-}
+```sql
+CREATE TABLE pricing_plans (
+  id               SERIAL PRIMARY KEY,
+  code             VARCHAR(50)    NOT NULL UNIQUE,
+  name             VARCHAR(100)   NOT NULL,
+  type             VARCHAR(20)    NOT NULL,  -- 'hourly', 'monthly'
+  base_rate        DECIMAL(10,2)  NOT NULL,
+  billing_interval VARCHAR(20)    NOT NULL,
+  description      TEXT,
+  is_active        BOOLEAN        NOT NULL DEFAULT TRUE,
+  created_at       TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ    NOT NULL DEFAULT NOW()
+);
 ```
 
 ### Queries Comunes
 
 #### Obtener planes activos
-```javascript
-db.pricingplans.find({ isActive: true });
+```sql
+SELECT * FROM pricing_plans WHERE is_active = TRUE;
 ```
 
 #### Buscar plan por código
-```javascript
-db.pricingplans.findOne({ code: "STANDARD_HOURLY" });
+```sql
+SELECT * FROM pricing_plans WHERE code = 'STANDARD_HOURLY';
 ```
 
 #### Crear nuevo plan
-```javascript
-db.pricingplans.insertOne({
-  code: "MONTHLY_STUDENT",
-  name: "Mensualidad Estudiantes",
-  type: "SUBSCRIPTION",
-  baseRate: 250.00,
-  currency: "GTQ",
-  billingInterval: "MONTH",
-  description: "Suscripción mensual ilimitada para estudiantes",
-  isActive: true,
-  rules: {
-    gracePeriodMinutes: 0,
-    maxDailyCap: null,
-    weekendMultiplier: 1.0
-  }
-});
+```sql
+INSERT INTO pricing_plans (code, name, type, base_rate, billing_interval, description)
+VALUES ('MONTHLY_STUDENT', 'Mensualidad Estudiantes', 'monthly', 250.00, 'MONTH', 'Suscripción mensual ilimitada para estudiantes');
 ```
 
 ---
 
-## 5. Colección: `auditlogs`
+## 5. Tabla: `invoices`
 
-### Estructura del Documento
+### Estructura
 
-```javascript
-{
-  _id: ObjectId("692cb80d5b37a245f8e8b77d"),
-  userId: ObjectId("692cb50d5b37a245f8e8b44a"),
-  userRole: "student",
-  ipAddress: "192.168.1.100",
-  userAgent: "Mozilla/5.0...",
-  action: "LOGIN",
-  resource: "Auth",
-  status: "SUCCESS",
-  details: {
-    email: "juan@test.com",
-    loginMethod: "password"
-  },
-  timestamp: ISODate("2025-11-30T21:15:06.132Z")
-}
+```sql
+CREATE TABLE invoices (
+  id           SERIAL PRIMARY KEY,
+  user_id      INTEGER        NOT NULL REFERENCES users(id),
+  amount       DECIMAL(10,2)  NOT NULL,
+  invoice_date TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+  created_at   TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ    NOT NULL DEFAULT NOW()
+);
 ```
 
-### Índices
+### Queries Comunes
 
-```javascript
-db.auditlogs.createIndex({ timestamp: -1, action: 1 });
-db.auditlogs.createIndex({ userId: 1 });
+#### Buscar facturas de un usuario
+```sql
+SELECT * FROM invoices WHERE user_id = 2 ORDER BY created_at DESC;
+```
+
+#### Total facturado en un período
+```sql
+SELECT SUM(amount) AS total_amount, COUNT(*) AS invoice_count
+FROM invoices
+WHERE invoice_date BETWEEN '2025-11-01' AND '2025-11-30';
+```
+
+#### Reporte de ingresos diarios
+```sql
+SELECT DATE(invoice_date) AS day, SUM(amount) AS total, COUNT(*) AS count
+FROM invoices
+GROUP BY DATE(invoice_date)
+ORDER BY day DESC;
+```
+
+---
+
+## 6. Tabla: `audit_logs`
+
+### Estructura
+
+```sql
+CREATE TABLE audit_logs (
+  id          SERIAL PRIMARY KEY,
+  user_id     INTEGER      REFERENCES users(id),
+  user_role   VARCHAR(50),
+  ip_address  VARCHAR(45),
+  user_agent  VARCHAR(255),
+  action      VARCHAR(100) NOT NULL,
+  resource    VARCHAR(100) NOT NULL,
+  status      VARCHAR(20)  NOT NULL,  -- 'success', 'failure', 'warning'
+  details     JSONB,
+  timestamp   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
 ```
 
 ### Queries Comunes
 
 #### Logs de un usuario
-```javascript
-db.auditlogs.find({ 
-  userId: ObjectId("692cb50d5b37a245f8e8b44a") 
-}).sort({ timestamp: -1 }).limit(100);
+```sql
+SELECT * FROM audit_logs WHERE user_id = 2 ORDER BY timestamp DESC LIMIT 100;
 ```
 
 #### Logs por acción
-```javascript
-db.auditlogs.find({ action: "LOGIN" })
-  .sort({ timestamp: -1 })
-  .limit(50);
+```sql
+SELECT * FROM audit_logs WHERE action = 'LOGIN' ORDER BY timestamp DESC LIMIT 50;
 ```
 
 #### Logs de intentos fallidos
-```javascript
-db.auditlogs.find({ 
-  status: "FAILURE",
-  action: "LOGIN"
-}).sort({ timestamp: -1 });
+```sql
+SELECT * FROM audit_logs WHERE status = 'failure' AND action = 'LOGIN' ORDER BY timestamp DESC;
 ```
 
-#### Análisis de actividad por fecha
-```javascript
-db.auditlogs.aggregate([
-  {
-    $match: {
-      timestamp: {
-        $gte: ISODate("2025-11-01"),
-        $lte: ISODate("2025-11-30")
-      }
-    }
-  },
-  {
-    $group: {
-      _id: { action: "$action", status: "$status" },
-      count: { $sum: 1 }
-    }
-  },
-  { $sort: { count: -1 } }
-]);
-```
-
----
-
-## 📦 Exportar/Importar Base de Datos
-
-### Exportar toda la base de datos
-
-```bash
-mongodump --uri="mongodb+srv://usuario:contraseña@cluster.mongodb.net/parqueo_umg" --out=./backup
-```
-
-### Exportar solo una colección
-
-```bash
-mongoexport --uri="mongodb+srv://usuario:contraseña@cluster.mongodb.net/parqueo_umg" --collection=users --out=users.json
-```
-
-### Importar base de datos
-
-```bash
-mongorestore --uri="mongodb+srv://usuario:contraseña@cluster.mongodb.net/parqueo_umg" ./backup/parqueo_umg
-```
-
-### Importar una colección
-
-```bash
-mongoimport --uri="mongodb+srv://usuario:contraseña@cluster.mongodb.net/parqueo_umg" --collection=users --file=users.json
+#### Análisis de actividad por acción
+```sql
+SELECT action, status, COUNT(*) AS count
+FROM audit_logs
+WHERE timestamp BETWEEN '2025-11-01' AND '2025-11-30'
+GROUP BY action, status
+ORDER BY count DESC;
 ```
 
 ---
 
 ## 🔧 Scripts de Inicialización
 
-### Script 1: Crear Base de Datos y Colecciones
+### Crear la Base de Datos
 
-```javascript
-// Conectar a MongoDB
-use parqueo_umg;
+```powershell
+# Conectarse a PostgreSQL
+"C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h 127.0.0.1
 
-// Crear colecciones con validación
-db.createCollection("users", {
-  validator: {
-    $jsonSchema: {
-      bsonType: "object",
-      required: ["name", "email", "password", "cardId", "vehiclePlate"],
-      properties: {
-        email: { bsonType: "string", pattern: "^\\S+@\\S+\\.\\S+$" },
-        role: { enum: ["admin", "guard", "faculty", "student", "visitor"] }
-      }
-    }
-  }
-});
+# En el prompt de psql:
+CREATE DATABASE parking_db;
+\q
 ```
 
-### Script 2: Crear Índices
+### Ejecutar los Seeders
 
-```javascript
-// Índices de users
-db.users.createIndex({ email: 1 }, { unique: true });
-db.users.createIndex({ cardId: 1 }, { unique: true });
-db.users.createIndex({ vehiclePlate: 1 }, { unique: true });
-db.users.createIndex({ role: 1 });
+```bash
+# Crear tablas y datos iniciales del parqueo
+npm run seed
 
-// Índices de parkinglots
-db.parkinglots.createIndex({ name: 1 }, { unique: true });
-db.parkinglots.createIndex({ location: "2dsphere" });
+# Crear usuarios de prueba
+npm run seed:users
 
-// Índices de invoices
-db.invoices.createIndex({ invoiceNumber: 1 }, { unique: true });
-db.invoices.createIndex({ userId: 1 });
-db.invoices.createIndex({ createdAt: -1 });
+# Crear planes de precios
+npm run seed:pricing
 
-// Índices de auditlogs
-db.auditlogs.createIndex({ timestamp: -1, action: 1 });
-db.auditlogs.createIndex({ userId: 1 });
-
-// Índices de pricingplans
-db.pricingplans.createIndex({ code: 1 }, { unique: true });
+# Ejecutar todo de una vez
+npm run seed:all
 ```
 
-### Script 3: Datos de Prueba
+### Datos de Prueba (Usuarios)
 
-```javascript
-// Crear parqueo inicial
-db.parkinglots.insertOne({
-  name: "Parqueo Principal UMG",
-  location: {
-    type: "Point",
-    coordinates: [-90.506882, 14.634915]
-  },
-  totalSpaces: 10,
-  availableSpaces: 10,
-  spaces: [
-    { spaceNumber: "A1", isOccupied: false, occupiedBy: null, entryTime: null },
-    { spaceNumber: "A2", isOccupied: false, occupiedBy: null, entryTime: null },
-    { spaceNumber: "A3", isOccupied: false, occupiedBy: null, entryTime: null },
-    { spaceNumber: "A4", isOccupied: false, occupiedBy: null, entryTime: null },
-    { spaceNumber: "A5", isOccupied: false, occupiedBy: null, entryTime: null },
-    { spaceNumber: "B1", isOccupied: false, occupiedBy: null, entryTime: null },
-    { spaceNumber: "B2", isOccupied: false, occupiedBy: null, entryTime: null },
-    { spaceNumber: "B3", isOccupied: false, occupiedBy: null, entryTime: null },
-    { spaceNumber: "B4", isOccupied: false, occupiedBy: null, entryTime: null },
-    { spaceNumber: "B5", isOccupied: false, occupiedBy: null, entryTime: null }
-  ]
-});
-
-// Crear planes de precios
-db.pricingplans.insertMany([
-  {
-    code: "HOURLY_STUDENT",
-    name: "Por Hora - Estudiantes",
-    type: "HOURLY",
-    baseRate: 10.00,
-    currency: "GTQ",
-    billingInterval: "HOUR",
-    isActive: true,
-    rules: { gracePeriodMinutes: 15, maxDailyCap: 50.00 }
-  },
-  {
-    code: "HOURLY_VISITOR",
-    name: "Por Hora - Visitantes",
-    type: "HOURLY",
-    baseRate: 15.00,
-    currency: "GTQ",
-    billingInterval: "HOUR",
-    isActive: true,
-    rules: { gracePeriodMinutes: 15, maxDailyCap: 75.00 }
-  }
-]);
-```
+| Nombre | Email | Contraseña | Rol |
+|--------|-------|------------|-----|
+| Admin UMG | admin@miumg.edu.gt | Admin2025! | admin |
+| Guardia 1 | guardia@miumg.edu.gt | Guard2025! | guard |
+| Prof. López | lopez@miumg.edu.gt | Faculty2025! | faculty |
+| Estudiante 1 | student1@miumg.edu.gt | Student2025! | student |
+| Visitante | visita@gmail.com | Visit2025! | visitor |
 
 ---
 
 ## 📊 Consultas de Análisis
 
-### Reporte de Ingresos Diarios
-
-```javascript
-db.invoices.aggregate([
-  {
-    $match: {
-      status: "PAID",
-      createdAt: {
-        $gte: ISODate("2025-11-01"),
-        $lte: ISODate("2025-11-30")
-      }
-    }
-  },
-  {
-    $group: {
-      _id: { 
-        $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } 
-      },
-      totalIncome: { $sum: "$amount" },
-      invoiceCount: { $sum: 1 }
-    }
-  },
-  { $sort: { _id: 1 } }
-]);
-```
-
 ### Usuarios Más Activos
-
-```javascript
-db.invoices.aggregate([
-  {
-    $group: {
-      _id: "$userId",
-      totalSpent: { $sum: "$amount" },
-      visits: { $sum: 1 }
-    }
-  },
-  { $sort: { totalSpent: -1 } },
-  { $limit: 10 },
-  {
-    $lookup: {
-      from: "users",
-      localField: "_id",
-      foreignField: "_id",
-      as: "userInfo"
-    }
-  }
-]);
+```sql
+SELECT u.name, u.email, COUNT(i.id) AS visits, SUM(i.amount) AS total_spent
+FROM users u
+JOIN invoices i ON u.id = i.user_id
+GROUP BY u.id, u.name, u.email
+ORDER BY total_spent DESC
+LIMIT 10;
 ```
 
-### Ocupación Promedio del Parqueo
-
-```javascript
-db.parkinglots.aggregate([
-  { $unwind: "$spaces" },
-  {
-    $group: {
-      _id: "$name",
-      totalSpaces: { $sum: 1 },
-      occupiedSpaces: {
-        $sum: { $cond: ["$spaces.isOccupied", 1, 0] }
-      }
-    }
-  },
-  {
-    $project: {
-      totalSpaces: 1,
-      occupiedSpaces: 1,
-      occupancyRate: {
-        $multiply: [
-          { $divide: ["$occupiedSpaces", "$totalSpaces"] },
-          100
-        ]
-      }
-    }
-  }
-]);
+### Ocupación Actual del Parqueo
+```sql
+SELECT
+  pl.name,
+  pl.total_spaces,
+  pl.available_spaces,
+  pl.total_spaces - pl.available_spaces AS occupied_spaces,
+  ROUND((pl.total_spaces - pl.available_spaces)::numeric / pl.total_spaces * 100, 1) AS occupancy_percent
+FROM parking_lots pl;
 ```
 
 ---
 
 ## 🔒 Seguridad y Permisos
 
-### Crear Usuario de Base de Datos
+### Crear Usuario de Base de Datos (Producción)
 
-```javascript
-use admin;
-
-db.createUser({
-  user: "parqueo_app",
-  pwd: "password_seguro_aqui",
-  roles: [
-    { role: "readWrite", db: "parqueo_umg" },
-    { role: "dbAdmin", db: "parqueo_umg" }
-  ]
-});
+```sql
+-- Crear usuario con permisos limitados
+CREATE USER parqueo_app WITH PASSWORD 'password_seguro';
+GRANT CONNECT ON DATABASE parking_db TO parqueo_app;
+GRANT USAGE ON SCHEMA public TO parqueo_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO parqueo_app;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO parqueo_app;
 ```
 
-### String de Conexión Recomendado
+### String de Conexión
 
-```
-mongodb+srv://parqueo_app:password@cluster.mongodb.net/parqueo_umg?retryWrites=true&w=majority
+```env
+# Variables separadas (recomendado para Windows)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=parking_db
+DB_USER=postgres
+DB_PASSWORD=tu_password
 ```
 
 ---
 
 ## 📝 Notas Importantes
 
-1. **Backup Regular**: Configurar backups automáticos diarios
-2. **Índices**: Todos los índices están configurados para optimizar consultas
-3. **Relaciones**: Se usan referencias (ObjectId) para mantener integridad
-4. **Auditoría**: Todos los eventos críticos se registran en `auditlogs`
-5. **Escalabilidad**: Diseñado para soportar múltiples sedes con índices geoespaciales
+1. **Sincronización Automática**: Sequelize sincroniza los modelos automáticamente al iniciar el servidor con `force: false` (no destruye datos existentes).
+2. **Índices**: Sequelize crea índices automáticamente para los campos `unique: true`.
+3. **Timestamps**: Todos los modelos tienen `createdAt` y `updatedAt` gestionados por Sequelize.
+4. **Relaciones**: Las claves foráneas (`FK`) se definen en el archivo `src/models/index.js`.
+5. **Auditoría**: Todas las acciones críticas se registran en `audit_logs`.
 
 ---
 
-**Documentación generada**: 2025-11-30  
+**Documentación actualizada**: 21 de febrero de 2026  
 **Versión del Sistema**: 2.0.0

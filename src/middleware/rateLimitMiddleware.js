@@ -1,5 +1,5 @@
 // src/middleware/rateLimitMiddleware.js
-const { getCache, setCache } = require('../config/redisClient');
+const { incrementRateLimit } = require('../config/redis');
 const logger = require('../config/logger');
 
 /**

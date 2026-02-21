@@ -28,12 +28,16 @@ exports.protect = async (req, res, next) => {
     }
 
     // 3. Verificar y decodificar el token usando la clave secreta
+    console.log('🔑 Verifying token:', token.substring(0, 20) + '...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('🔓 Decoded payload:', decoded);
 
     // 4. Buscar el usuario en la base de datos (Seguridad Robusta)
     // Esto asegura que si el usuario fue eliminado o su rol cambió, el token no sirva
-    const User = require('../models/user');
-    const user = await User.findById(decoded.id).select('-password');
+    // 4. Buscar el usuario en la base de datos (Seguridad Robusta)
+    // Esto asegura que si el usuario fue eliminado o su rol cambió, el token no sirva
+    const { User } = require('../models'); // Importar desde index.js para asegurar modelo correcto
+    const user = await User.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
 
     if (!user) {
       return res.status(401).json({
@@ -42,13 +46,15 @@ exports.protect = async (req, res, next) => {
     }
 
     // 5. Adjuntar el usuario completo a la petición
+    console.log('✅ Auth Success. User:', user.email, 'ID:', user.id);
     req.user = user;
-    req.userId = user._id; // Mantener compatibilidad
+    req.userId = user.id; // Corrected from _id to id for Sequelize consistency
 
     // 6. Continuar al siguiente middleware
     next();
 
   } catch (error) {
+    console.error('❌ Auth Middleware Error:', error.message);
     // Manejar diferentes tipos de errores de JWT
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({

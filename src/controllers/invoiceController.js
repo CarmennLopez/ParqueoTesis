@@ -1,7 +1,6 @@
 // src/controllers/invoiceController.js
 const asyncHandler = require('express-async-handler');
-const Invoice = require('../models/Invoice');
-const User = require('../models/user');
+const { Invoice, User } = require('../models');
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
@@ -16,7 +15,7 @@ const generateInvoice = asyncHandler(async (req, res) => {
     const { amount, items } = req.body;
     const userId = req.userId;
 
-    const user = await User.findById(userId);
+    const user = await User.findByPk(userId);
     if (!user) {
         res.status(404);
         throw new Error('Usuario no encontrado');
@@ -37,7 +36,7 @@ const generateInvoice = asyncHandler(async (req, res) => {
         invoiceNumber,
         userId,
         amount,
-        felData,
+        felData, // Sequelize handles JSONB automatically
         items: items || [{ description: 'Servicio de Parqueo', quantity: 1, unitPrice: amount, total: amount }],
         status: 'PAID'
     });

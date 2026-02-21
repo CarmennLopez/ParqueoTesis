@@ -1,5 +1,5 @@
 // src/middleware/idempotencyMiddleware.js
-const { getCache, setCache } = require('../config/redisClient');
+const { saveIdempotentResult, getIdempotentResult } = require('../config/redis');
 const logger = require('../config/logger');
 
 /**

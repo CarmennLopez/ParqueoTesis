@@ -9,55 +9,42 @@
 
 ---
 
-## 🔧 Paso 1: Instalar MongoDB Local
+## 🔧 Paso 1: Instalar PostgreSQL Local
 
-### Opción A: Instalador Oficial (Recomendado)
+### Opción A: Instalador Oficial
 
-1. Descargar MongoDB Community Server desde:
-   - https://www.mongodb.com/try/download/community
-   - Versión: **7.0 o superior**
+1. Descargar PostgreSQL desde:
+   - https://www.postgresql.org/download/windows/
+   - Versión: **14 o superior**
    - OS: **Windows**
 
 2. Ejecutar instalador:
-   - ✅ Instalar como servicio de Windows
-   - ✅ Incluir MongoDB Compass (GUI opcional)
-   - Directorio de datos: `C:\data\db`
+   - Seguir los pasos del asistente.
+   - Recordar la contraseña del superusuario (`postgres`).
+   - Puerto por defecto: **5432**.
 
 3. Verificar instalación:
 ```powershell
-# Abrir PowerShell como Administrador
-mongod --version
-# Debe mostrar: db version v7.x.x
-
-# El servicio debe estar corriendo automáticamente
-# Verificar en Servicios de Windows: MongoDB Server
-```
-
-### Opción B: Chocolatey (Instalador de paquetes)
-
-```powershell
-# Si tienes Chocolatey instalado
-choco install mongodb
-
-# Crear directorio de datos
-New-Item -Path C:\data\db -ItemType Directory -Force
-
-# Iniciar MongoDB manualmente
-mongod --dbpath C:\data\db
+# Abrir PowerShell
+psql --version
+# Debe mostrar: psql (PostgreSQL) ...
 ```
 
 ### Verificar Conexión
 
 ```powershell
-# Abrir MongoDB Shell
-mongosh
+# Conectar con psql (ajustar ruta si cambia la versión)
+"C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h 127.0.0.1
 
-# Deberías ver:
-# Current Mongosh Log ID: ...
-# Connecting to: mongodb://127.0.0.1:27017/?directConnection=true
+# Deberías ver el prompt:
+# psql (PostgreSQL) 14.x...
+# postgres=#
+
+# Listar bases de datos
+\l
 
 # Salir
-exit
+\q
 ```
 
 ---
@@ -139,32 +126,32 @@ Editar `.env` con tus valores locales:
 NODE_ENV=development
 PORT=3000
 
-# MongoDB Local
-MONGODB_URI=mongodb://localhost:27017/parqueo_umg
+# PostgreSQL Local
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=parking_db
+DB_USER=postgres
+DB_PASSWORD=
 
 # Redis Local
 REDIS_URL=redis://localhost:6379
 
 # JWT (Cambiar en producción)
 JWT_SECRET=umg_parking_dev_secret_2025
-JWT_EXPIRATION=15m
-JWT_REFRESH_EXPIRATION=30d
+JWT_EXPIRATION=1h
+JWT_REFRESH_EXPIRATION=7d
 
 # CORS (Permite localhost para desarrollo)
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8100,http://localhost:4200
 
 # Simulación IoT
-MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_SIMULATION_MODE=true
 
 # Simulación FEL
 FEL_SIMULATION_MODE=true
-FEL_PROVIDER=INFILE_GUATEMALA
 
 # Simulación LDAP
 LDAP_SIMULATION_MODE=true
-LDAP_SERVER_URL=ldap://localhost:389
-LDAP_BASE_DN=dc=umg,dc=edu,dc=gt
 
 # Logging
 LOG_LEVEL=debug
@@ -204,7 +191,7 @@ npm start
 Deberías ver:
 ```
 🚀 Servidor escuchando en http://localhost:3000
-✅ Conectado a la base de datos de MongoDB
+✅ Conectado a la base de datos PostgreSQL (parking_db)
 📝 Modo: development
 ```
 
@@ -262,11 +249,11 @@ curl -X POST http://localhost:3000/api/auth/login `
 
 ## 🛠️ Herramientas Recomendadas
 
-### MongoDB Compass (GUI)
-- Explorar base de datos visualmente
-- Ejecutar queries manualmente
-- Crear índices
-- Descargar: https://www.mongodb.com/products/compass
+### pgAdmin (GUI para PostgreSQL)
+- Explorar y administrar la base de datos visualmente
+- Ejecutar queries SQL manualmente
+- Crear y gestionar índices
+- Descargar: https://www.pgadmin.org/download/
 
 ### Redis Commander (GUI para Redis)
 ```powershell
@@ -288,20 +275,19 @@ redis-commander --redis-port 6379
 
 ## 🐛 Solución de Problemas
 
-### MongoDB no inicia
+### PostgreSQL no inicia
 
-**Error:** `MongoNetworkError: connect ECONNREFUSED 127.0.0.1:27017`
+**Error:** `SequelizeConnectionRefusedError: connect ECONNREFUSED 127.0.0.1:5432`
 
 **Solución:**
 ```powershell
 # Verificar servicio de Windows
-Get-Service MongoDB
+Get-Service postgresql*
 
 # Si está detenido, iniciarlo
-Start-Service MongoDB
+Start-Service postgresql-x64-18
 
-# O manualmente:
-mongod --dbpath C:\data\db
+# O desde el Panel de Control → Servicios
 ```
 
 ### Redis/Memurai no responde
@@ -351,7 +337,8 @@ Una vez verificada la instalación:
 
 ## 🔗 Referencias Útiles
 
-- **Documentación MongoDB:** https://www.mongodb.com/docs/manual/
+- **Documentación PostgreSQL:** https://www.postgresql.org/docs/
+- **Documentación Sequelize:** https://sequelize.org/docs/v6/
 - **Documentación Redis:** https://redis.io/docs/
 - **Memurai Docs:** https://docs.memurai.com/
 - **Node.js Best Practices:** https://github.com/goldbergyoni/nodebestpractices

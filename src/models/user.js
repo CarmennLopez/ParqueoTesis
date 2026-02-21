@@ -1,117 +1,123 @@
-// src/models/user.js
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 const bcrypt = require('bcrypt');
 const { USER_ROLES } = require('../config/constants');
 
-const UserSchema = new mongoose.Schema({
+const User = sequelize.define('User', {
+    id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true
+    },
     name: {
-        type: String,
-        required: true,
-        trim: true
+        type: DataTypes.STRING,
+        allowNull: false
     },
     email: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
+        allowNull: false,
         unique: true,
-        trim: true,
-        lowercase: true
+        validate: {
+            isEmail: true
+        }
     },
     password: {
-        type: String,
-        required: true,
-        trim: true
+        type: DataTypes.STRING,
+        allowNull: false
     },
-    hasPaid: {
-        type: Boolean,
-        default: false
+    role: {
+        type: DataTypes.ENUM,
+        values: Object.values(USER_ROLES),
+        defaultValue: USER_ROLES.STUDENT
     },
     cardId: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
         unique: true,
-        trim: true
+        allowNull: false,
+        field: 'card_id'
     },
     vehiclePlate: {
-        type: String,
-        required: true,
+        type: DataTypes.STRING,
         unique: true,
-        trim: true,
-        uppercase: true
+        allowNull: false,
+        field: 'vehicle_plate'
+    },
+    hasPaid: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        field: 'has_paid'
     },
     // Datos de Facturación (FEL)
     nit: {
-        type: String,
-        trim: true,
-        default: 'CF'
+        type: DataTypes.STRING,
+        defaultValue: 'CF'
     },
     fiscalAddress: {
-        type: String,
-        trim: true,
-        default: 'Ciudad'
+        type: DataTypes.STRING,
+        defaultValue: 'Ciudad',
+        field: 'fiscal_address'
     },
     fiscalName: {
-        type: String,
-        trim: true
+        type: DataTypes.STRING,
+        field: 'fiscal_name'
     },
-
-    currentParkingLot: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ParkingLot',
-        default: null
+    // Estado actual del usuario
+    currentParkingLotId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        field: 'current_parking_lot_id'
     },
     currentParkingSpace: {
-        type: String,
-        default: null
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: 'current_parking_space'
     },
     entryTime: {
-        type: Date,
-        default: null
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'entry_time'
     },
     lastPaymentAmount: {
-        type: Number,
-        default: 0
-    },
-
-    // Suscripciones
-    subscriptionPlan: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'PricingPlan',
-        default: null
-    },
-    subscriptionExpiresAt: {
-        type: Date,
-        default: null
-    },
-
-    // Auditoría
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    role: {
-        type: String,
-        enum: Object.values(USER_ROLES),
-        default: USER_ROLES.STUDENT
+        type: DataTypes.DECIMAL(10, 2),
+        defaultValue: 0,
+        field: 'last_payment_amount'
     },
     refreshTokenVersion: {
-        type: Number,
-        default: 0
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+        field: 'refresh_token_version'
+    },
+    // --- Solvencia Mensual ---
+    isSolvent: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        field: 'is_solvent'
+    },
+    solvencyExpires: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        field: 'solvency_expires'
+    },
+    solvencyUpdatedBy: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        field: 'solvency_updated_by'
     }
 }, {
-    timestamps: true
-});
-
-// Middleware PRE-SAVE: Encripta la contraseña antes de guardarla
-UserSchema.pre('save', async function (next) {
-    if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10);
+    tableName: 'users',
+    timestamps: true,
+    hooks: {
+        beforeSave: async (user) => {
+            if (user.changed('password')) {
+                user.password = await bcrypt.hash(user.password, 10);
+            }
+        }
     }
-    next();
 });
 
-// Método para comparar contraseñas
-UserSchema.methods.matchPassword = async function (enteredPassword) {
+// Método de instancia para verificar contraseña
+User.prototype.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.models.User || mongoose.model('User', UserSchema);
+module.exports = User;

@@ -1,50 +1,36 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const ParkingSpaceSchema = new mongoose.Schema({
-  spaceNumber: {
-    type: String,
-    required: true
+const ParkingLot = sequelize.define('ParkingLot', {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
   },
-  isOccupied: {
-    type: Boolean,
-    default: false
-  },
-  occupiedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  entryTime: {
-    type: Date,
-    default: null
-  }
-});
-
-const ParkingLotSchema = new mongoose.Schema({
   name: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
   },
+  // Location stored as JSON (lat, lon) - without PostGIS dependency
   location: {
-    type: { type: String, default: 'Point' },
-    coordinates: { type: [Number], default: [0, 0] } // [longitud, latitud]
+    type: DataTypes.JSON, // Simplified: removes PostGIS requirement
+    allowNull: false,
+    defaultValue: { lat: 0, lon: 0 }
   },
   totalSpaces: {
-    type: Number,
-    required: true
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'total_spaces'
   },
   availableSpaces: {
-    type: Number,
-    default: 0
-  },
-  spaces: [ParkingSpaceSchema]
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    field: 'available_spaces'
+  }
 }, {
+  tableName: 'parking_lots',
   timestamps: true
 });
 
-// Índice geoespacial para búsquedas de cercanía
-ParkingLotSchema.index({ location: '2dsphere' });
-
-module.exports = mongoose.models.ParkingLot || mongoose.model('ParkingLot', ParkingLotSchema);
+module.exports = ParkingLot;

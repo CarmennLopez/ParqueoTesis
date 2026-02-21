@@ -23,7 +23,7 @@
     "api",
     "nodejs",
     "express",
-    "mongodb"
+    "postgresql"
   ],
   "author": "Carmen Lopez",
   "license": "ISC",
@@ -34,16 +34,17 @@
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "express-async-handler": "^1.2.0",
-    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",
+    "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^7.0.0",
-    "mongoose": "^8.18.2",
     "mqtt": "^5.14.1",
     "pdf-lib": "^1.17.1",
+    "pg": "^8.18.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7",
     "sharp": "^0.34.5",
     "socket.io": "^4.8.1",
     "swagger-jsdoc": "^6.2.8",
@@ -52,9 +53,9 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
+    "eslint": "^8.55.0",
     "jest": "^29.7.0",
-    "supertest": "^6.3.3",
-    "eslint": "^8.55.0"
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.3"
   }
 }

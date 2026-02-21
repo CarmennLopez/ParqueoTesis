@@ -1,82 +1,116 @@
 // seed.js: Script para inicializar el lote de parqueo en la base de datos
 
-const { connect } = require('mongoose');
 const dotenv = require('dotenv');
-// Importa el modelo ParkingLot desde la carpeta de modelos
-const ParkingLot = require('./src/models/ParkingLot');
+const path = require('path');
 
-// Cargar variables de entorno
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-const mongoURI = process.env.MONGODB_URI;
+const { sequelize } = require('./src/config/database');
+const { User, ParkingLot, ParkingSpace, PricingPlan } = require('./src/models');
+const { USER_ROLES } = require('./src/config/constants');
 
-// --- CONFIGURACIÓN DEL PARQUEO ---
-const PARKING_LOT_NAME = process.env.PARKING_LOT_NAME || 'Parqueo Principal';
-const NUM_SPACES = 10;
-// Las filas del parqueo (para generar nombres como A1, A2, B1, B2...)
-const ROWS = ['A', 'B'];
-// ----------------------------------
 
-// Función principal para generar los datos y guardarlos
-const seedDB = async () => {
+const seedDatabase = async () => {
     try {
-        await connect(mongoURI);
-        console.log('✅ Conectado a la base de datos de MongoDB para la inicialización.');
+        await sequelize.authenticate();
+        console.log('✅ Conectado a PostgreSQL');
 
-        // 1. Verificar si ya existe un lote de parqueo
-        const existingLot = await ParkingLot.findOne({ name: PARKING_LOT_NAME });
+        // Sincronizar modelos (FORCE: TRUE borra todo)
+        await sequelize.sync({ force: true });
+        console.log('✅ Base de datos sincronizada (Tablas recreadas)');
 
-        if (existingLot) {
-            console.log(`⚠️ El parqueo '${PARKING_LOT_NAME}' ya existe. Eliminando y recreando para asegurar limpieza.`);
-            await ParkingLot.deleteMany({ name: PARKING_LOT_NAME });
-        }
-
-        // 2. Generar la lista de espacios
-        const spaces = [];
-        let count = 0;
-
-        // Genera 10 espacios con nombres como A1, A2, A3, A4, A5, B1, B2...
-        for (let i = 0; i < ROWS.length && count < NUM_SPACES; i++) {
-            const row = ROWS[i];
-            // Distribuye los espacios entre las filas (ej: 5 en A y 5 en B)
-            const spacesInRow = Math.min(NUM_SPACES - count, Math.ceil(NUM_SPACES / ROWS.length));
-
-            for (let j = 1; j <= spacesInRow && count < NUM_SPACES; j++) {
-                spaces.push({
-                    spaceNumber: `${row}${j}`,
-                    isOccupied: false,
-                    occupiedBy: null,
-                    entryTime: null,
-                });
-                count++;
-            }
-        }
-
-        // 3. Crear el nuevo documento ParkingLot
-        const newLot = new ParkingLot({
-            name: PARKING_LOT_NAME,
-            location: 'Cercano al campus central',
-            totalSpaces: spaces.length,
-            availableSpaces: spaces.length,
-            spaces: spaces,
+        // 1. Crear Planes de Precio
+        const hourlyPlan = await PricingPlan.create({
+            code: 'ESTANDAR_HORA',
+            name: 'Tarifa Estándar por Hora',
+            type: 'HOURLY',
+            baseRate: 10.00,
+            currency: 'GTQ',
+            billingInterval: 'HOUR',
+            description: 'Cobro de Q10.00 por cada hora o fracción.',
+            isActive: true
         });
 
-        await newLot.save();
+        const studentPlan = await PricingPlan.create({
+            code: 'ALUMNO_SEM',
+            name: 'Plan Semestral Alumnos',
+            type: 'SUBSCRIPTION',
+            baseRate: 500.00,
+            currency: 'GTQ',
+            billingInterval: 'ONE_TIME', // Simulado
+            description: 'Pago único por semestre con acceso ilimitado.',
+            isActive: true
+        });
 
-        console.log(`\n🎉 Inicialización Exitosa.`);
-        console.log(`✅ Parqueo '${PARKING_LOT_NAME}' creado con ${newLot.totalSpaces} espacios.`);
+        console.log('✅ Planes de precio creados');
 
-    } catch (error) {
-        console.error('❌ Error durante la inicialización de la base de datos:', error.message);
-    } finally {
-        // Desconectar al terminar, independientemente del éxito o fracaso
-        if (require('mongoose').connection.readyState === 1) {
-            await require('mongoose').disconnect();
-            console.log('🔌 Desconectado de MongoDB.');
+        // 2. Crear Usuarios
+        // Hash password manually if hooks don't fire on bulkCreate (they usually do on create)
+        // Using create for safety with hooks
+        const adminUser = await User.create({
+            name: 'Administrador',
+            email: 'admin@umg.edu.gt',
+            password: 'adminpassword', // Hook will hash
+            role: USER_ROLES.ADMIN,
+            cardId: 'ADMIN001',
+            vehiclePlate: 'ADMIN-001'
+        });
+
+        const guardUser = await User.create({
+            name: 'Oficial de Seguridad',
+            email: 'guardia@umg.edu.gt',
+            password: 'guardpassword',
+            role: USER_ROLES.GUARD,
+            cardId: 'GUARD001',
+            vehiclePlate: 'GUARD-001'
+        });
+
+        const studentUser = await User.create({
+            name: 'Estudiante Demo',
+            email: 'estudiante@umg.edu.gt',
+            password: 'userpassword',
+            role: USER_ROLES.STUDENT,
+            cardId: 'STUDENT001',
+            vehiclePlate: 'P-123XYZ',
+            subscriptionPlanId: studentPlan.id // Sequelize FK
+        });
+
+        console.log('✅ Usuarios creados');
+
+        // 3. Crear Parqueo (Campus Central)
+        // Coordenadas aproximadas UMG Portales/Central (Ejemplo)
+        // PostGIS Point: { type: 'Point', coordinates: [lng, lat] }
+        const mainLot = await ParkingLot.create({
+            name: 'Campus Central - Sótano 1',
+            location: {
+                type: 'Point',
+                coordinates: [-90.2866, 14.7595] // [Longitud, Latitud] - San Antonio La Paz
+            },
+            totalSpaces: 20
+        });
+
+        console.log('✅ Parqueo creado:', mainLot.name);
+
+        // 4. Crear Espacios de Parqueo
+        // Generar 20 espacios
+        const spacesData = [];
+        for (let i = 1; i <= 20; i++) {
+            spacesData.push({
+                parkingLotId: mainLot.id,
+                spaceNumber: `A-${i.toString().padStart(2, '0')}`,
+                isOccupied: false
+            });
         }
-        // Asegúrate de que el proceso termine después de la desconexión
-        process.exit();
+        await ParkingSpace.bulkCreate(spacesData);
+
+        console.log(`✅ ${spacesData.length} espacios de parqueo creados`);
+
+        console.log('🚀 Seeding completado con éxito');
+        process.exit(0);
+    } catch (error) {
+        console.error('❌ Error en seeding:', error);
+        process.exit(1);
     }
 };
 
-seedDB();
+seedDatabase();

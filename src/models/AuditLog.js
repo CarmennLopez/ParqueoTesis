@@ -1,66 +1,52 @@
-// src/models/AuditLog.js
-const mongoose = require('mongoose');
+// src/models/AuditLog.js - Sequelize para PostgreSQL
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const AuditLogSchema = new mongoose.Schema({
-    // WHO: Quién realizó la acción
+const AuditLog = sequelize.define('AuditLog', {
+    id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true
+    },
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: false // Puede ser null para acciones del sistema o anónimas
+        type: DataTypes.STRING,
+        allowNull: true
     },
     userRole: {
-        type: String,
-        required: false
+        type: DataTypes.STRING,
+        allowNull: true
     },
     ipAddress: {
-        type: String,
-        required: false
+        type: DataTypes.STRING,
+        allowNull: true
     },
     userAgent: {
-        type: String,
-        required: false
+        type: DataTypes.STRING,
+        allowNull: true
     },
-
-    // WHAT: Qué acción se realizó
     action: {
-        type: String,
-        required: true,
-        uppercase: true,
-        trim: true
-        // Ejemplos: 'LOGIN', 'OPEN_GATE', 'PAYMENT', 'UPDATE_RATE'
+        type: DataTypes.STRING,
+        allowNull: false
     },
     resource: {
-        type: String,
-        required: true,
-        trim: true
-        // Ejemplos: 'Auth', 'ParkingLot', 'User', 'System'
+        type: DataTypes.STRING,
+        allowNull: false
     },
     status: {
-        type: String,
-        enum: ['SUCCESS', 'FAILURE', 'WARNING'],
-        default: 'SUCCESS'
+        type: DataTypes.ENUM('SUCCESS', 'FAILURE', 'WARNING'),
+        defaultValue: 'SUCCESS'
     },
-
-    // DETAILS: Metadata adicional del evento
     details: {
-        type: mongoose.Schema.Types.Mixed, // Permite guardar objetos JSON flexibles
-        default: {}
+        type: DataTypes.JSON,
+        defaultValue: {}
     },
-
-    // WHEN: Cuándo ocurrió (inmutable)
     timestamp: {
-        type: Date,
-        default: Date.now,
-        immutable: true
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW
     }
 }, {
-    // Opciones de esquema
-    timestamps: false, // Usamos nuestro propio timestamp inmutable
-    versionKey: false
+    timestamps: false,
+    tableName: 'AuditLogs'
 });
 
-// Índice para búsquedas rápidas por fecha y acción
-AuditLogSchema.index({ timestamp: -1, action: 1 });
-AuditLogSchema.index({ userId: 1 });
-
-module.exports = mongoose.models.AuditLog || mongoose.model('AuditLog', AuditLogSchema);
+module.exports = AuditLog;

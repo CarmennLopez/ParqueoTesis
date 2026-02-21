@@ -1,52 +1,62 @@
-// src/models/PricingPlan.js
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const PricingPlanSchema = new mongoose.Schema({
+const PricingPlan = sequelize.define('PricingPlan', {
+    id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true
+    },
     code: {
-        type: String,
-        required: true,
-        unique: true,
-        uppercase: true,
-        trim: true
-        // Ej: 'STANDARD_HOURLY', 'MONTHLY_SUB', 'FACULTY_PRO'
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
     },
     name: {
-        type: String,
-        required: true
+        type: DataTypes.STRING,
+        allowNull: false
     },
     type: {
-        type: String,
-        enum: ['HOURLY', 'FLAT_FEE', 'SUBSCRIPTION'],
-        required: true
+        type: DataTypes.ENUM('HOURLY', 'FLAT_FEE', 'SUBSCRIPTION'),
+        allowNull: false
     },
     baseRate: {
-        type: Number,
-        required: true,
-        min: 0
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        validate: {
+            min: 0
+        },
+        field: 'base_rate'
     },
     currency: {
-        type: String,
-        default: 'GTQ', // Quetzales
-        enum: ['GTQ', 'USD']
+        type: DataTypes.ENUM('GTQ', 'USD'),
+        defaultValue: 'GTQ'
     },
     billingInterval: {
-        type: String,
-        enum: ['HOUR', 'DAY', 'MONTH', 'ONE_TIME'],
-        default: 'HOUR'
+        type: DataTypes.ENUM('HOUR', 'DAY', 'MONTH', 'ONE_TIME'),
+        defaultValue: 'HOUR',
+        field: 'billing_interval'
     },
-    description: String,
+    description: {
+        type: DataTypes.TEXT
+    },
     isActive: {
-        type: Boolean,
-        default: true
+        type: DataTypes.BOOLEAN,
+        defaultValue: true,
+        field: 'is_active'
     },
-    // Reglas avanzadas (opcional para futuro)
+    // Reglas almacenadas como JSON
     rules: {
-        gracePeriodMinutes: { type: Number, default: 15 },
-        maxDailyCap: { type: Number }, // Tope diario
-        weekendMultiplier: { type: Number, default: 1.0 }
+        type: DataTypes.JSONB,
+        defaultValue: {
+            gracePeriodMinutes: 15,
+            maxDailyCap: null,
+            weekendMultiplier: 1.0
+        }
     }
 }, {
+    tableName: 'pricing_plans',
     timestamps: true
 });
 
-module.exports = mongoose.models.PricingPlan || mongoose.model('PricingPlan', PricingPlanSchema);
+module.exports = PricingPlan;

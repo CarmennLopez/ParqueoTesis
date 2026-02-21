@@ -43,20 +43,14 @@ class MqttService {
     }
 
     subscribeToTopics() {
-        // Suscribirse a eventos de sensores (ej. LPR, loops inductivos)
         const topics = ['parking/sensors/+', 'parking/gates/+/status'];
-
         this.client.subscribe(topics, (err) => {
-            if (err) {
-                logger.error('Error suscribiendo a tópicos:', err);
-            } else {
-                logger.info(`Suscrito a: ${topics.join(', ')}`);
-            }
+            if (err) logger.error('Error suscribiendo a tópicos:', err);
+            else logger.info(`Suscrito a: ${topics.join(', ')}`);
         });
 
         this.client.on('message', (topic, message) => {
             logger.info(`📨 Mensaje recibido en [${topic}]: ${message.toString()}`);
-            // Aquí se procesarían eventos reales
         });
     }
 

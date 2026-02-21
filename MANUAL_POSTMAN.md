@@ -52,7 +52,7 @@ Content-Type: application/json
 ```json
 {
   "name": "Juan Pérez",
-  "email": "juan@test.com",
+  "email": "juan@miumg.edu.gt",
   "password": "Password123",
   "cardId": "CARD001",
   "vehiclePlate": "ABC123",
@@ -75,7 +75,7 @@ Content-Type: application/json
 {
   "_id": "692cb50d5b37a245f8e8b44a",
   "name": "Juan Pérez",
-  "email": "juan@test.com",
+  "email": "juan@miumg.edu.gt",
   "role": "student",
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
@@ -95,7 +95,7 @@ Content-Type: application/json
 **Body** (raw - JSON):
 ```json
 {
-  "email": "juan@test.com",
+  "email": "juan@miumg.edu.gt",
   "password": "Password123"
 }
 ```
@@ -103,9 +103,9 @@ Content-Type: application/json
 **Respuesta Exitosa** (200):
 ```json
 {
-  "_id": "692cb50d5b37a245f8e8b44a",
+  "id": 1,
   "name": "Juan Pérez",
-  "email": "juan@test.com",
+  "email": "juan@miumg.edu.gt",
   "role": "student",
   "hasPaid": false,
   "currentParkingSpace": null,
@@ -143,9 +143,9 @@ Authorization: Bearer {{token}}
 **Respuesta Exitosa** (200):
 ```json
 {
-  "_id": "692cb50d5b37a245f8e8b44a",
+  "id": 1,
   "name": "Juan Pérez",
-  "email": "juan@test.com",
+  "email": "juan@miumg.edu.gt",
   "role": "student",
   "cardId": "CARD001",
   "vehiclePlate": "ABC123",
@@ -254,8 +254,8 @@ Authorization: Bearer {{token}}
   "success": true,
   "message": "Salida registrada exitosamente",
   "invoice": {
-    "_id": "692cb60d5b37a245f8e8b55b",
-    "userId": "692cb50d5b37a245f8e8b44a",
+    "id": 1,
+    "userId": 1,
     "parkingSpace": "A1",
     "entryTime": "2025-11-30T21:15:06.132Z",
     "exitTime": "2025-11-30T22:30:15.456Z",
@@ -334,7 +334,7 @@ Authorization: Bearer {{token}}
   "success": true,
   "invoices": [
     {
-      "_id": "692cb60d5b37a245f8e8b55b",
+      "id": 1,
       "parkingSpace": "A1",
       "entryTime": "2025-11-30T21:15:06.132Z",
       "exitTime": "2025-11-30T22:30:15.456Z",
@@ -389,7 +389,7 @@ Authorization: Bearer {{token}}
 {
   "status": "healthy",
   "checks": {
-    "mongodb": "connected",
+    "database": "connected (PostgreSQL)",
     "redis": "connected"
   },
   "timestamp": "2025-11-30T21:15:06.132Z"
@@ -442,11 +442,15 @@ Authorization: Bearer {{token}}
 
 ### Escenario 2: Administrador - Monitoreo
 
-1. **Login como Admin** (necesitas crear un usuario admin en la BD)
+1. **Login como Admin** (primero crea un usuario admin en PostgreSQL)
+   ```sql
+   UPDATE users SET role = 'admin' WHERE email = 'admin@miumg.edu.gt';
+   ```
+   Luego inicia sesión con:
    ```json
    {
-     "email": "admin@umg.edu.gt",
-     "password": "Admin123"
+     "email": "admin@miumg.edu.gt",
+     "password": "Admin2025!"
    }
    ```
 
@@ -555,10 +559,10 @@ Organiza tus requests en carpetas:
 1. Importa esta colección a Postman
 2. Configura el Environment
 3. Ejecuta el flujo completo
-4. Prueba los endpoints de Admin (requiere modificar el rol en la BD)
+4. Prueba los endpoints de Admin (requiere cambiar rol en PostgreSQL con: `UPDATE users SET role = 'admin' WHERE email = 'admin@miumg.edu.gt';`)
 5. Descarga facturas en PDF
 
 ---
 
-**Documentación actualizada**: 2025-11-30  
+**Documentación actualizada**: 21 de febrero de 2026  
 **Soporte**: soporte@umg.edu.gt

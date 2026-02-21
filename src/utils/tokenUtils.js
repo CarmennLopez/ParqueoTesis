@@ -1,7 +1,7 @@
 // src/utils/tokenUtils.js
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { setCache, getCache, deleteCache } = require('../config/redisClient');
+const { setCache, getCache, deleteCache } = require('../config/redis');
 const { JWT_EXPIRATION, REFRESH_TOKEN_EXPIRATION } = require('../config/constants');
 const logger = require('../config/logger');
 

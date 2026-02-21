@@ -1,6 +1,6 @@
 # Sistema de Gestión de Parqueo - API REST
 
-Sistema completo de gestión de parqueo desarrollado con Node.js, Express y MongoDB. Permite el control de entrada, pago y salida de vehículos con autenticación JWT y roles de usuario.
+Sistema completo de gestión de parqueo desarrollado con Node.js, Express y PostgreSQL (Sequelize). Permite el control de entrada, pago y salida de vehículos con autenticación JWT y roles de usuario.
 
 ## 🚀 Características
 
@@ -18,7 +18,7 @@ Sistema completo de gestión de parqueo desarrollado con Node.js, Express y Mong
 ## 📋 Requisitos Previos
 
 - Node.js 16+ 
-- MongoDB 5+ (local o MongoDB Atlas)
+- PostgreSQL 14+
 - npm o yarn
 
 ## 🛠️ Instalación
@@ -49,7 +49,11 @@ Editar `.env` con tus configuraciones:
 ```env
 PORT=3000
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/parqueo
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=parking_db
+DB_USER=postgres
+DB_PASSWORD=tu_password
 JWT_SECRET=tu_secreto_super_seguro_aqui
 JWT_EXPIRATION=24h
 ALLOWED_ORIGINS=http://localhost:3000
@@ -81,7 +85,13 @@ npm start
 
 El servidor estará disponible en `http://localhost:3000`
 
-## 📚 Uso de la API
+## 📖 Documentación API (Swagger)
+
+Puedes ver la documentación interactiva y probar los endpoints directamente en:
+
+**http://localhost:3000/api-docs**
+
+## � Uso de la API
 
 ### Autenticación
 
@@ -93,7 +103,7 @@ Content-Type: application/json
 
 {
   "name": "Juan Pérez",
-  "email": "juan@example.com",
+  "email": "juan@miumg.edu.gt",
   "password": "Password123",
   "cardId": "CARD001",
   "vehiclePlate": "ABC123"
@@ -113,7 +123,7 @@ POST /api/auth/login
 Content-Type: application/json
 
 {
-  "email": "juan@example.com",
+  "email": "juan@miumg.edu.gt",
   "password": "Password123"
 }
 ```
@@ -264,11 +274,8 @@ El sistema cuenta con tres roles:
 
 Para crear un administrador, modificar el rol directamente en la base de datos:
 
-```javascript
-db.users.updateOne(
-  { email: "admin@example.com" },
-  { $set: { role: "admin" } }
-)
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';
 ```
 
 ## 🔒 Seguridad

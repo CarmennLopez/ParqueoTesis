@@ -29,7 +29,7 @@ npm run seed:all
 
 ### 3. Docker Setup
 **Estado**: ⏳ Requiere verificación
-- Necesita: MongoDB, Redis corriendo
+- Necesita: PostgreSQL, Redis corriendo
 - Comando: `npm run docker:up`
 - Problema: No había información clara sobre estado
 
@@ -51,7 +51,7 @@ npm install
 # 2. Ejecutar tests (sin Docker)
 npm test
 
-# 3. Verificar seeders (si MongoDB local está corriendo)
+# 3. Verificar seeders (si PostgreSQL local está corriendo)
 npm run seed:all
 
 # 4. Iniciar servidor en desarrollo
@@ -67,7 +67,7 @@ npm install
 npm run docker:build
 npm run docker:up
 
-# 3. Esperar a que MongoDB esté listo (30 segundos)
+# 3. Esperar a que PostgreSQL esté listo (30 segundos)
 sleep 30
 
 # 4. Crear datos de prueba
@@ -87,7 +87,7 @@ docker-compose exec api npm test
 ### Para Testing Local
 - ✅ Node.js 16+
 - ✅ npm 7+
-- ⏳ MongoDB 5+ (opcional, para seed:all)
+- ⏳ PostgreSQL 14+ (opcional, para seed:all)
 - ⏳ Redis (opcional, para cache)
 
 ### Para Docker
@@ -115,7 +115,7 @@ docker-compose exec api npm test
 ### Docker
 - [ ] Docker Desktop corriendo
 - [ ] `npm run docker:up` inicia servicios
-- [ ] `docker-compose ps` muestra 3 contenedores (api, mongo, redis)
+- [ ] `docker-compose ps` muestra 3 contenedores (api, postgres, redis)
 - [ ] `npm run seed:all` dentro del contenedor funciona
 - [ ] `npm run docker:down` detiene limpiamente
 

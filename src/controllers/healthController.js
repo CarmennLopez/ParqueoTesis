@@ -1,49 +1,28 @@
 // src/controllers/healthController.js
-const { isRedisHealthy } = require('../config/redisClient');
-const mongoose = require('mongoose');
+const { isRedisHealthy } = require('../config/redis');
+const { sequelize } = require('../config/database'); // Use Sequelize
 
-/**
- * @desc Health check simple - Liveness Probe
- * @route GET /health/liveness
- * @access Public
- * @purpose Indica si el proceso está vivo (para Kubernetes/Load Balancers)
- */
 const livenessProbe = async (req, res, next) => {
     try {
-        // Simple check: Si este endpoint responde, el proceso está vivo
-        res.status(200).json({
-            status: 'UP',
-            timestamp: Date.now(),
-            uptime: Math.floor(process.uptime()),
-        });
-    } catch (error) {
-        next(error);
-    }
+        res.status(200).json({ status: 'UP', timestamp: Date.now(), uptime: Math.floor(process.uptime()) });
+    } catch (error) { next(error); }
 };
 
-/**
- * @desc Health check profundo - Readiness Probe
- * @route GET /health/readiness
- * @access Public
- * @purpose Indica si el servicio puede recibir tráfico (chequea dependencias)
- */
 const readinessProbe = async (req, res, next) => {
     try {
         const checks = {
-            mongodb: false,
+            database: false,
             redis: false,
         };
 
         let overallStatus = 'UP';
 
-        // Check 1: MongoDB
+        // Check 1: Database (PostgreSQL)
         try {
-            checks.mongodb = mongoose.connection.readyState === 1; // 1 = connected
-            if (!checks.mongodb) {
-                overallStatus = 'DOWN';
-            }
+            await sequelize.authenticate();
+            checks.database = true;
         } catch (error) {
-            checks.mongodb = false;
+            checks.database = false;
             overallStatus = 'DOWN';
         }
 

@@ -11,26 +11,44 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - MONGODB_URI=mongodb://mongo:27017/parking_db
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/parking_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET:-supersecretkey_change_in_production}
       - PARKING_LOT_NAME=Campus Central
+      - MQTT_SIMULATION_MODE=true
+      - FEL_SIMULATION_MODE=true
+      - LDAP_SIMULATION_MODE=true
+      - IOT_SIMULATION_MODE=true
+      - LOG_LEVEL=info
+      - GOOGLE_CLIENT_ID=764282486192-ktjhutfv755s7s7blbm9s3huq7e909t4.apps.googleusercontent.com
     depends_on:
-      - mongo
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - parking-net
 
-  # Base de Datos MongoDB
-  mongo:
-    image: mongo:7.0
-    container_name: parking-mongo
+  # Base de Datos PostgreSQL + PostGIS
+  postgres:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: parking-postgres
     restart: always
     ports:
-      - "27017:27017"
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=parking_db
     volumes:
-      - mongo_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - parking-net
 
@@ -51,5 +69,5 @@ networks:
     driver: bridge
 
 volumes:
-  mongo_data:
+  postgres_data:
   redis_data:

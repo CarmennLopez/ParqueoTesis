@@ -23,6 +23,8 @@ RUN apk add --no-cache curl
 # Copiar desde el builder solo lo necesario
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src ./src
+COPY --from=builder /app/seeders ./seeders
+COPY --from=builder /app/seed.js ./
 COPY --from=builder /app/server.js ./
 COPY --from=builder /app/package.json ./
 
@@ -36,6 +38,9 @@ EXPOSE 3000
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD curl -f http://localhost:3000/health/liveness || exit 1
+
+# Crear directorio de logs y asignar permisos
+RUN mkdir -p logs && chown -R node:node logs
 
 # Usuario no privilegiado por seguridad
 USER node
