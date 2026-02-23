@@ -49,7 +49,7 @@ const seedDatabase = async () => {
         // Using create for safety with hooks
         const adminUser = await User.create({
             name: 'Administrador',
-            email: 'admin@umg.edu.gt',
+            email: 'admin@miumg.edu.gt',
             password: 'adminpassword', // Hook will hash
             role: USER_ROLES.ADMIN,
             cardId: 'ADMIN001',
@@ -58,7 +58,7 @@ const seedDatabase = async () => {
 
         const guardUser = await User.create({
             name: 'Oficial de Seguridad',
-            email: 'guardia@umg.edu.gt',
+            email: 'guardia@miumg.edu.gt',
             password: 'guardpassword',
             role: USER_ROLES.GUARD,
             cardId: 'GUARD001',
@@ -67,7 +67,7 @@ const seedDatabase = async () => {
 
         const studentUser = await User.create({
             name: 'Estudiante Demo',
-            email: 'estudiante@umg.edu.gt',
+            email: 'estudiante@miumg.edu.gt',
             password: 'userpassword',
             role: USER_ROLES.STUDENT,
             cardId: 'STUDENT001',

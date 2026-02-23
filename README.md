@@ -285,7 +285,7 @@ UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';
 - **Helmet**: Headers HTTP seguros
 - **CORS**: Control de orígenes permitidos
 - **Rate Limiting**: Máximo 5 intentos de login cada 15 minutos
-- **Sanitización NoSQL**: Prevención de inyección NoSQL
+- **Validación de datos**: Express-validator en todas las entradas
 - **Validación de datos**: Express-validator en todas las entradas
 - **JWT**: Tokens con expiración de 24 horas
 - **Bcrypt**: Encriptación de contraseñas con salt rounds de 10
@@ -300,10 +300,9 @@ UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';
    - Forzar HTTPS en producción
    - Usar certificados SSL válidos
 
-3. **MongoDB**:
-   - Usar MongoDB Atlas o servidor dedicado
-   - Configurar replica sets
-   - Backups automáticos diarios
+3. **PostgreSQL**:
+   - Usar PostgreSQL Cloud (RDS, Cloud SQL) o servidor dedicado
+   - Configurar backups automáticos diarios
 
 4. **Monitoreo**:
    - Revisar logs regularmente
@@ -359,9 +358,9 @@ npm run seed     # Inicializar/reiniciar base de datos
 
 ## 🐛 Troubleshooting
 
-### Error: "Variable de entorno MONGODB_URI no definida"
+### Error: "Variables de BD no definidas"
 - Verificar que existe el archivo `.env`
-- Verificar que la variable `MONGODB_URI` está definida en el archivo
+- Verificar que `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` están definidos
 
 ### Error: "No autorizado, no se proporcionó token"
 - Verificar que el header `Authorization` está presente
@@ -371,10 +370,9 @@ npm run seed     # Inicializar/reiniciar base de datos
 - Ejecutar `npm run seed` para reiniciar el parqueo
 - O liberar espacios usando `/api/parking/release`
 
-### Error de conexión a MongoDB
-- Verificar que MongoDB está corriendo
-- Verificar la URI de conexión en `.env`
-- Para MongoDB local: `mongodb://localhost:27017/parqueo`
+### Error de conexión a PostgreSQL
+- Verificar que PostgreSQL está corriendo (o Docker activo)
+- Verificar las credenciales en `.env`
 
 ## 📄 Licencia
 

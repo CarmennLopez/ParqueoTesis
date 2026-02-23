@@ -60,7 +60,7 @@
 
 - [x] **Variables de Entorno**
   - [x] JWT_SECRET actualizado (no hardcodeado)
-  - [x] MONGODB_URI seguro
+  - [x] Variables de BD de PostgreSQL configuradas
   - [x] REDIS_URL seguro
   - [x] .env actualizado
   - [x] .env.test creado
@@ -194,7 +194,7 @@
 
 - [x] **docker-compose.yml**
   - [x] Servicio API
-  - [x] MongoDB 7.0
+  - [x] PostgreSQL 16
   - [x] Redis Alpine
   - [x] Redes configuradas
   - [x] Volúmenes persistentes

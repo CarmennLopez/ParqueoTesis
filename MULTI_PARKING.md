@@ -11,10 +11,10 @@ El sistema ahora soporta **múltiples parqueos simultáneamente**. Un usuario pu
 ### 1. **Modelo de Usuario (User)**
 Se agregó el campo `currentParkingLot`:
 ```javascript
-currentParkingLot: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ParkingLot',
-    default: null
+currentParkingLotId: {
+    type: DataTypes.INTEGER,
+    references: { model: 'ParkingLots', key: 'id' },
+    defaultValue: null
 }
 ```
 
@@ -216,7 +216,7 @@ const parkingLots = [
 **Causa:** El `parkingLotId` no existe en la BD.
 **Solución:** 
 1. Verificar el ID con `GET /api/parking/lots`
-2. Asegurarse de que el parqueo existe en MongoDB
+2. Asegurarse de que el parqueo existe en PostgreSQL (tabla `ParkingLots`)
 
 ### Campo `currentParkingLot` es null
 **Causa:** Usuario asignado antes de actualizar el modelo.

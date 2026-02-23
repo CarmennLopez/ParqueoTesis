@@ -12,7 +12,7 @@
 
 ### Requisitos
 - Node.js 16+
-- MongoDB 5+
+- PostgreSQL 14+
 - Redis (Memurai en Windows, Redis en Linux/Mac)
 
 ### Pasos
@@ -68,7 +68,7 @@ curl http://localhost:3000/health/liveness
 # Construir imagen
 npm run docker:build
 
-# Iniciar servicios (API + MongoDB + Redis)
+# Iniciar servicios (API + PostgreSQL + Redis)
 npm run docker:up
 
 # Ver logs
@@ -87,10 +87,10 @@ services:
     - Puerto: 3000
     - Healthcheck cada 30s
   
-  mongo:
-    - MongoDB 7.0
-    - Puerto: 27017
-    - Volumen: mongo_data
+  postgres:
+    - PostgreSQL 16
+    - Puerto: 5432
+    - Volumen: postgres_data
   
   redis:
     - Redis Alpine
@@ -111,7 +111,7 @@ docker-compose exec api npm run seed:all
 docker-compose down -v
 
 # Ver logs de un servicio específico
-docker-compose logs mongo
+docker-compose logs postgres
 ```
 
 ---
@@ -123,7 +123,7 @@ docker-compose logs mongo
 - Docker y Docker Compose instalados
 - Dominio configurado
 - Certificado SSL/TLS
-- MongoDB Atlas o BD autogestionada
+- PostgreSQL Cloud (RDS, Cloud SQL) o BD autogestionada
 - Redis en producción
 
 ### Variables de Entorno (Producción)
@@ -133,10 +133,13 @@ docker-compose logs mongo
 NODE_ENV=production
 PORT=3000
 
-# Base de datos
-MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/parqueo
-MONGODB_TIMEOUT=5000
-MONGODB_RETRY_ATTEMPTS=5
+# Base de datos PostgreSQL
+DB_HOST=db.example.com
+DB_PORT=5432
+DB_NAME=parqueo_production
+DB_USER=parqueo_user
+DB_PASSWORD=strong_password_here
+DB_DIALECT=postgres
 
 # Redis (con autenticación)
 REDIS_URL=redis://:strong_password@redis.example.com:6379
@@ -261,28 +264,28 @@ sudo certbot certonly --nginx -d api.example.com
 ### Backup Automatizado
 
 ```bash
-# /usr/local/bin/backup-mongodb.sh
+# /usr/local/bin/backup-postgres.sh
 #!/bin/bash
 
-BACKUP_DIR="/backups/mongodb"
+BACKUP_DIR="/backups/postgres"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p $BACKUP_DIR
 
-docker-compose exec -T mongo mongodump \
-  --uri="mongodb://user:pass@mongo:27017/parqueo" \
-  --out=$BACKUP_DIR/dump_$TIMESTAMP
+docker-compose exec -T postgres pg_dump \
+  -U $DB_USER $DB_NAME \
+  > $BACKUP_DIR/dump_$TIMESTAMP.sql
 
 # Mantener solo últimos 30 días
-find $BACKUP_DIR -maxdepth 1 -type d -mtime +30 -exec rm -rf {} \;
+find $BACKUP_DIR -name "*.sql" -mtime +30 -delete
 
-echo "Backup completado: $BACKUP_DIR/dump_$TIMESTAMP"
+echo "Backup completado: $BACKUP_DIR/dump_$TIMESTAMP.sql"
 ```
 
 Agregar a crontab:
 ```bash
 # Backup diario a las 2:00 AM
-0 2 * * * /usr/local/bin/backup-mongodb.sh
+0 2 * * * /usr/local/bin/backup-postgres.sh
 ```
 
 ---
@@ -321,8 +324,8 @@ df -h
 # Uso de memoria/CPU
 docker stats
 
-# Conexiones MongoDB
-docker-compose exec mongo mongosh --eval "db.serverStatus()"
+# Conexiones PostgreSQL
+docker-compose exec postgres psql -U $DB_USER -c "SELECT COUNT(*) FROM pg_stat_activity;"
 ```
 
 ### Alertas Recomendadas
@@ -363,10 +366,10 @@ docker-compose logs api
 # Ver error específico
 ```
 
-### MongoDB no responde
+### PostgreSQL no responde
 ```bash
 # Reiniciar
-docker-compose restart mongo
+docker-compose restart postgres
 
 # O desde cero
 docker-compose down -v

@@ -41,7 +41,7 @@ npm list --depth=0
 Debe mostrar:
 - express-validator
 - express-rate-limit
-- express-mongo-sanitize
+- express-validator
 - winston
 - compression
 - helmet
@@ -58,7 +58,7 @@ notepad .env
 ```
 
 Variables críticas a configurar:
-- `MONGODB_URI` - Tu conexión a MongoDB
+- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` - Configuración de conexión a PostgreSQL
 - `JWT_SECRET` - Un secreto seguro (mínimo 32 caracteres aleatorios)
 
 ### 4. Prueba de Inicialización
@@ -70,7 +70,7 @@ npm run seed
 
 Debe mostrar:
 ```
-✅ Conectado a la base de datos de MongoDB para la inicialización
+✅ Conectado a la base de datos de PostgreSQL para la inicialización
 🎉 Inicialización Exitosa
 ✅ Parqueo 'Parqueo Principal' creado con 10 espacios
 ```
@@ -84,7 +84,7 @@ npm run dev
 
 Debe mostrar:
 ```
-✅ Conectado a la base de datos de MongoDB
+✅ Conectado a la base de datos de PostgreSQL
 🚀 Servidor escuchando en http://localhost:3000
 📝 Modo: development
 ```
@@ -179,12 +179,12 @@ Esperado: Estado completo del parqueo
 
 ## ⚠️ Problemas Comunes
 
-### "Error: MONGODB_URI no definida"
-- Verifica que `.env` existe y tiene `MONGODB_URI` configurado
+### "Error: variables de entorno de BD no definidas"
+- Verifica que `.env` existe y tiene `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` configurados
 
-### "Error de conexión a MongoDB"
-- Verifica que MongoDB está corriendo
-- Verifica la URI de conexión
+### "Error de conexión a PostgreSQL"
+- Verifica que PostgreSQL está corriendo (o el contenedor Docker está activo)
+- Verifica las credenciales de conexión en `.env`
 
 ### "Cannot find module 'winston'"
 - Ejecuta `npm install`

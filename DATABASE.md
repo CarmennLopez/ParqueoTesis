@@ -41,6 +41,10 @@ CREATE TABLE users (
   entry_time             TIMESTAMPTZ,
   last_payment_amount    DECIMAL(10,2) DEFAULT 0,
   refresh_token_version  INTEGER       NOT NULL DEFAULT 0,
+  -- Solvencia Mensual
+  is_solvent             BOOLEAN       NOT NULL DEFAULT FALSE,
+  solvency_expires       TIMESTAMPTZ,
+  solvency_updated_by    INTEGER       REFERENCES users(id),
   created_at             TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
   updated_at             TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
@@ -61,10 +65,13 @@ CREATE TABLE users (
 | `fiscal_address` | VARCHAR(255) | - | Dirección fiscal |
 | `fiscal_name` | VARCHAR(100) | - | Nombre fiscal |
 | `current_parking_lot_id` | INT FK | - | Lote actual |
-| `current_parking_space` | VARCHAR(10) | - | Espacio actual (ej: "A1") |
+| `current_parking_space` | VARCHAR(10) | - | Espacio actual (ej: "A-5") |
 | `entry_time` | TIMESTAMPTZ | - | Hora de entrada al parqueo |
 | `last_payment_amount` | DECIMAL(10,2) | DEFAULT 0 | Último monto pagado |
 | `refresh_token_version` | INTEGER | DEFAULT 0 | Versión del refresh token |
+| `is_solvent` | BOOLEAN | DEFAULT FALSE | Si el usuario tiene solvencia mensual vigente |
+| `solvency_expires` | TIMESTAMPTZ | NULL | Fecha de vencimiento de la solvencia |
+| `solvency_updated_by` | INT FK | NULL | ID del admin/guard que actualizó la solvencia |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Fecha de creación |
 | `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Última actualización |
 
@@ -115,6 +122,35 @@ UPDATE users SET role = 'admin' WHERE email = 'admin@miumg.edu.gt';
 #### Listar usuarios por rol
 ```sql
 SELECT * FROM users WHERE role = 'student' ORDER BY created_at DESC;
+```
+
+#### Actualizar solvencia mensual (1 mes)
+```sql
+UPDATE users
+SET is_solvent = TRUE,
+    solvency_expires = NOW() + INTERVAL '1 month',
+    solvency_updated_by = 1  -- ID del admin/guard
+WHERE id = 5;
+```
+
+#### Consultar solvencia por carné
+```sql
+SELECT id, name, role, card_id, is_solvent, solvency_expires,
+       GREATEST(0, EXTRACT(DAY FROM solvency_expires - NOW())::int) AS days_remaining
+FROM users
+WHERE card_id = '12345678';
+```
+
+#### Reporte de solvencias de estudiantes
+```sql
+SELECT id, name, card_id, vehicle_plate, is_solvent, solvency_expires,
+       CASE
+         WHEN solvency_expires > NOW() AND is_solvent = TRUE THEN 'VIGENTE'
+         ELSE 'VENCIDA'
+       END AS status
+FROM users
+WHERE role = 'student'
+ORDER BY solvency_expires ASC NULLS LAST;
 ```
 
 ---
@@ -377,7 +413,7 @@ npm run seed:all
 | Guardia 1 | guardia@miumg.edu.gt | Guard2025! | guard |
 | Prof. López | lopez@miumg.edu.gt | Faculty2025! | faculty |
 | Estudiante 1 | student1@miumg.edu.gt | Student2025! | student |
-| Visitante | visita@gmail.com | Visit2025! | visitor |
+| Estudiante 2 | student2@miumg.edu.gt | Student2025! | student |
 
 ---
 

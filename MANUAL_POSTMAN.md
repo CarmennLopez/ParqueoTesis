@@ -1,19 +1,23 @@
 # Manual de Pruebas con Postman - API Sistema de Parqueo UMG
 
-**Version**: 2.0.0  
-**URL Base**: `http://localhost:3000`
+**Versión**: 2.0.0  
+**URL Base**: `http://localhost:3000`  
+**Swagger UI**: `http://localhost:3000/api-docs`
 
 ---
 
 ## 📋 Tabla de Contenidos
 
 1. [Configuración Inicial](#configuración-inicial)
-2. [Endpoints de Autenticación](#endpoints-de-autenticación)
-3. [Endpoints de Parqueo](#endpoints-de-parqueo)
-4. [Endpoints de Facturas](#endpoints-de-facturas)
-5. [Health Checks](#health-checks)
-6. [Flujo de Prueba Completo](#flujo-de-prueba-completo)
-7. [Automatización en Postman](#automatización-en-postman)
+2. [Autenticación](#-autenticación)
+3. [Parqueo — Flujo Principal](#-parqueo--flujo-principal)
+4. [Solvencia](#-solvencia-mensual)
+5. [Facturas](#-facturas)
+6. [IoT / Cámaras LPR](#-iot--cámaras-lpr)
+7. [Health Checks](#-health-checks)
+8. [Flujo de Prueba Completo](#-flujo-de-prueba-completo)
+9. [Automatización en Postman](#-automatización-en-postman)
+10. [Errores Comunes](#-errores-comunes)
 
 ---
 
@@ -21,23 +25,22 @@
 
 ### Requisitos Previos
 - ✅ Servidor corriendo: `npm run dev`
-- ✅ Base de datos inicializada: `npm run seed`
-- ✅ Postman instalado
+- ✅ Base de datos inicializada: `npm run seed:all`
+- ✅ Postman instalado (v10+)
 
 ### Configurar Environment en Postman
 
-1. Crear un nuevo Environment llamado "Parqueo Local"
-2. Agregar estas variables:
+Crear un nuevo Environment llamado **"Parqueo UMG Local"** con estas variables:
 
-| Variable | Valor Inicial |
-|----------|---------------|
-| `baseUrl` | `http://localhost:3000` |
-| `token` | (dejar vacío) |
-| `refreshToken` | (dejar vacío) |
+| Variable | Valor Inicial | Descripción |
+|----------|---------------|-------------|
+| `baseUrl` | `http://localhost:3000` | URL base del servidor |
+| `token` | *(vacío)* | Access Token JWT (15 min) |
+| `refreshToken` | *(vacío)* | Refresh Token (7 días) |
 
 ---
 
-## 🔐 Endpoints de Autenticación
+## 🔐 Autenticación
 
 ### 1. Registrar Usuario
 
@@ -48,36 +51,43 @@
 Content-Type: application/json
 ```
 
-**Body** (raw - JSON):
+**Body** (raw — JSON):
 ```json
 {
-  "name": "Juan Pérez",
-  "email": "juan@miumg.edu.gt",
-  "password": "Password123",
-  "cardId": "CARD001",
-  "vehiclePlate": "ABC123",
+  "name": "Carmen Lopez",
+  "email": "carmen@miumg.edu.gt",
+  "password": "Password123!",
+  "card_id": "12345678",
+  "vehicle_plate": "UMG-001",
   "role": "student"
 }
 ```
 
-**Parámetros Opcionales**:
-- `role`: `student` | `faculty` | `visitor` | `guard` | `admin` (por defecto: `student`)
+**Roles disponibles**: `student` | `faculty` | `guard` | `admin`  
+*(el rol por defecto es `student`)*
 
 **Validaciones**:
-- ✅ Nombre: 2-50 caracteres
-- ✅ Email: formato válido
-- ✅ Password: mínimo 8 caracteres, debe incluir mayúscula, minúscula y número
-- ✅ CardId: 4-20 caracteres
-- ✅ VehiclePlate: 6-8 caracteres alfanuméricos
+- Nombre: 2–50 caracteres
+- Email: formato válido
+- Password: mínimo 8 caracteres, debe incluir mayúscula, minúscula y número
+- `card_id`: identificador único del carné
+- `vehicle_plate`: identificador único de la placa
 
 **Respuesta Exitosa** (201):
 ```json
 {
-  "_id": "692cb50d5b37a245f8e8b44a",
-  "name": "Juan Pérez",
-  "email": "juan@miumg.edu.gt",
-  "role": "student",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "id": 1,
+    "name": "Carmen Lopez",
+    "email": "carmen@miumg.edu.gt",
+    "role": "student",
+    "cardId": "12345678",
+    "vehiclePlate": "UMG-001",
+    "isSolvent": false
+  }
 }
 ```
 
@@ -87,45 +97,41 @@ Content-Type: application/json
 
 **Endpoint**: `POST {{baseUrl}}/api/auth/login`
 
-**Headers**:
-```
-Content-Type: application/json
-```
-
-**Body** (raw - JSON):
+**Body** (raw — JSON):
 ```json
 {
-  "email": "juan@miumg.edu.gt",
-  "password": "Password123"
+  "email": "carmen@miumg.edu.gt",
+  "password": "Password123!"
 }
 ```
 
 **Respuesta Exitosa** (200):
 ```json
 {
-  "id": 1,
-  "name": "Juan Pérez",
-  "email": "juan@miumg.edu.gt",
-  "role": "student",
-  "hasPaid": false,
-  "currentParkingSpace": null,
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "ae56dfee169265d28277bf8d3817a6ff..."
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "id": 1,
+    "name": "Carmen Lopez",
+    "email": "carmen@miumg.edu.gt",
+    "role": "student",
+    "cardId": "12345678",
+    "vehiclePlate": "UMG-001",
+    "isSolvent": false
+  }
 }
 ```
 
-**⚠️ Importante**: 
-- Guarda el `accessToken` para usarlo en requests protegidos
-- El `refreshToken` sirve para renovar el token cuando expire
-- Rate limit: 5 intentos cada 15 minutos
+> ⚠️ Rate limit: **5 intentos** por cada 15 minutos.
 
-**Script de Postman** (pestaña Tests):
+**Script de Postman** (pestaña *Tests*) para guardar tokens automáticamente:
 ```javascript
-// Auto-guardar tokens en variables de entorno
 if (pm.response.code === 200) {
-    const response = pm.response.json();
-    pm.environment.set("token", response.accessToken);
-    pm.environment.set("refreshToken", response.refreshToken);
+    const r = pm.response.json();
+    pm.environment.set("token", r.token);
+    pm.environment.set("refreshToken", r.refreshToken);
+    console.log("✅ Tokens guardados");
 }
 ```
 
@@ -143,15 +149,18 @@ Authorization: Bearer {{token}}
 **Respuesta Exitosa** (200):
 ```json
 {
-  "id": 1,
-  "name": "Juan Pérez",
-  "email": "juan@miumg.edu.gt",
-  "role": "student",
-  "cardId": "CARD001",
-  "vehiclePlate": "ABC123",
-  "currentParkingSpace": null,
-  "hasPaid": false,
-  "entryTime": null
+  "success": true,
+  "user": {
+    "id": 1,
+    "name": "Carmen Lopez",
+    "email": "carmen@miumg.edu.gt",
+    "role": "student",
+    "cardId": "12345678",
+    "vehiclePlate": "UMG-001",
+    "isSolvent": true,
+    "solvencyExpires": "2026-03-21T17:00:00.000Z",
+    "currentParkingSpace": null
+  }
 }
 ```
 
@@ -161,12 +170,7 @@ Authorization: Bearer {{token}}
 
 **Endpoint**: `POST {{baseUrl}}/api/auth/refresh`
 
-**Headers**:
-```
-Content-Type: application/json
-```
-
-**Body** (raw - JSON):
+**Body** (raw — JSON):
 ```json
 {
   "refreshToken": "{{refreshToken}}"
@@ -176,8 +180,8 @@ Content-Type: application/json
 **Respuesta Exitosa** (200):
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "nuevo_refresh_token..."
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIs..."
 }
 ```
 
@@ -189,10 +193,10 @@ Content-Type: application/json
 
 **Headers**:
 ```
-Content-Type: application/json
+Authorization: Bearer {{token}}
 ```
 
-**Body** (raw - JSON):
+**Body** (raw — JSON, opcional):
 ```json
 {
   "refreshToken": "{{refreshToken}}"
@@ -202,15 +206,61 @@ Content-Type: application/json
 **Respuesta Exitosa** (200):
 ```json
 {
-  "message": "Sesión cerrada exitosamente"
+  "success": true,
+  "message": "Sesión cerrada"
 }
 ```
 
 ---
 
-## 🚗 Endpoints de Parqueo
+### 6. Login con Google OAuth2
 
-### 6. Asignar Espacio de Parqueo
+**Endpoint**: `POST {{baseUrl}}/api/auth/google`
+
+**Body** (raw — JSON):
+```json
+{
+  "id_token": "eyJhbGciOiJSUzI1NiIs..."
+}
+```
+
+> ⚠️ Solo se aceptan correos institucionales `@miumg.edu.gt`.
+
+---
+
+## 🅿️ Parqueo — Flujo Principal
+
+El flujo estándar es: **Assign → Pay → Release**.
+
+### 7. Listar Lotes de Parqueo
+
+**Endpoint**: `GET {{baseUrl}}/api/parking/lots`
+
+**Headers**:
+```
+Authorization: Bearer {{token}}
+```
+
+**Respuesta Exitosa** (200):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Lote Norte",
+      "totalSpaces": 50,
+      "availableSpaces": 23,
+      "hourlyRate": 5.00,
+      "location": { "lat": 14.6349, "lng": -90.5069 }
+    }
+  ]
+}
+```
+
+---
+
+### 8. Asignar Espacio (Entrada)
 
 **Endpoint**: `POST {{baseUrl}}/api/parking/assign`
 
@@ -219,60 +269,87 @@ Content-Type: application/json
 Authorization: Bearer {{token}}
 ```
 
-**Body**: No requiere
+**Body** (raw — JSON):
+```json
+{
+  "parkingLotId": 1
+}
+```
+
+> ⚠️ Los estudiantes deben tener **solvencia mensual vigente** para acceder.
 
 **Respuesta Exitosa** (200):
 ```json
 {
-  "success": true,
-  "message": "Espacio asignado exitosamente",
-  "spaceNumber": "A1",
-  "entryTime": "2025-11-30T21:15:06.132Z"
+  "message": "Espacio asignado con éxito",
+  "parkingLot": "Lote Norte",
+  "space": "A-5",
+  "entryTime": "2026-02-21T17:00:00.000Z",
+  "info": "Tarifa al salir."
 }
 ```
 
-**Errores Comunes**:
-- `400`: Ya tienes un espacio asignado
-- `404`: No hay espacios disponibles (parqueo lleno)
+**Errores posibles**:
+- `400`: El usuario ya tiene un espacio asignado
+- `402`: No tiene solvencia mensual vigente
+- `404`: No hay espacios disponibles en el lote
 
 ---
 
-### 7. Salir del Parqueo (Generar Factura)
+### 9. Pagar Tarifa
 
-**Endpoint**: `POST {{baseUrl}}/api/parking/exit`
+**Endpoint**: `POST {{baseUrl}}/api/parking/pay`
 
 **Headers**:
 ```
 Authorization: Bearer {{token}}
 ```
 
-**Body**: No requiere
+**Body** (raw — JSON):
+```json
+{
+  "parkingLotId": 1
+}
+```
+
+> ⚠️ Rate limit: **3 intentos** por minuto.
 
 **Respuesta Exitosa** (200):
 ```json
 {
-  "success": true,
-  "message": "Salida registrada exitosamente",
-  "invoice": {
-    "id": 1,
-    "userId": 1,
-    "parkingSpace": "A1",
-    "entryTime": "2025-11-30T21:15:06.132Z",
-    "exitTime": "2025-11-30T22:30:15.456Z",
-    "duration": "1 hora 15 minutos",
-    "amount": 15.50,
-    "felNumber": "FEL-2025-001",
-    "status": "paid"
+  "message": "Pago realizado con éxito",
+  "amount": 15.50,
+  "space": "A-5",
+  "details": {
+    "totalAmount": 15.50,
+    "duration": "3h 5min"
   }
 }
 ```
 
-**Errores Comunes**:
-- `400`: No tienes un espacio asignado
+---
+
+### 10. Liberar Espacio (Salida)
+
+**Endpoint**: `POST {{baseUrl}}/api/parking/release`
+
+**Headers**:
+```
+Authorization: Bearer {{token}}
+```
+
+**Body**: No requiere  
+
+**Respuesta Exitosa** (200):
+```json
+{
+  "message": "¡Salida exitosa! Espacio A-5 liberado."
+}
+```
 
 ---
 
-### 8. Ver Estado del Parqueo (Admin/Guard)
+### 11. Estado del Parqueo (Dashboard)
 
 **Endpoint**: `GET {{baseUrl}}/api/parking/status`
 
@@ -281,106 +358,272 @@ Authorization: Bearer {{token}}
 Authorization: Bearer {{token}}
 ```
 
+> ⚠️ Requiere rol: `admin`, `guard` o `faculty`.
+
 **Respuesta Exitosa** (200):
 ```json
 {
   "success": true,
-  "parkingLot": {
-    "name": "Parqueo Principal UMG",
-    "totalSpaces": 10,
-    "availableSpaces": 7,
-    "occupiedSpaces": 3,
-    "spaces": [
-      {
-        "spaceNumber": "A1",
-        "isOccupied": true,
-        "occupiedBy": "692cb50d5b37a245f8e8b44a",
-        "entryTime": "2025-11-30T21:15:06.132Z"
-      },
-      {
-        "spaceNumber": "A2",
-        "isOccupied": false,
-        "occupiedBy": null,
-        "entryTime": null
-      }
-    ]
+  "data": [
+    {
+      "lotId": 1,
+      "name": "Lote Norte",
+      "totalSpaces": 50,
+      "occupiedSpaces": 27,
+      "availableSpaces": 23,
+      "occupancyRate": "54%"
+    }
+  ]
+}
+```
+
+---
+
+### 12. Abrir Barrera del Parqueo
+
+**Endpoint**: `POST {{baseUrl}}/api/parking/gate/open`
+
+**Headers**:
+```
+Authorization: Bearer {{token}}
+```
+
+**Body** (raw — JSON, opcional):
+```json
+{
+  "gate": "GATE_MAIN_ENTRY"
+}
+```
+
+**Valores de `gate`**: `GATE_MAIN_ENTRY` | `GATE_MAIN_EXIT`  
+> ⚠️ Rate limit: **5 aperturas** por minuto por usuario.
+
+**Respuesta Exitosa** (200):
+```json
+{
+  "success": true,
+  "message": "Barrera abierta"
+}
+```
+
+---
+
+## 💳 Solvencia Mensual
+
+### 13. Actualizar Solvencia de un Usuario
+
+**Endpoint**: `PUT {{baseUrl}}/api/parking/solvency/:userId`
+
+**Headers**:
+```
+Authorization: Bearer {{token}}
+```
+
+> ⚠️ Requiere rol: `admin` o `guard`.
+
+**Body** (raw — JSON, opcional):
+```json
+{
+  "months": 1
+}
+```
+
+`months` puede ser entre 1 y 12. Por defecto: 1.
+
+**Respuesta Exitosa** (200):
+```json
+{
+  "success": true,
+  "message": "Solvencia actualizada correctamente por 1 mes(es)",
+  "user": {
+    "id": 1,
+    "name": "Carmen Lopez",
+    "email": "carmen@miumg.edu.gt",
+    "cardId": "12345678",
+    "isSolvent": true,
+    "solvencyExpires": "2026-03-21T17:11:00.000Z"
   }
 }
 ```
 
-**⚠️ Requiere**: Rol `admin` o `guard`
-
 ---
 
-## 🧾 Endpoints de Facturas
+### 14. Consultar Solvencia por Carné
 
-### 9. Listar Mis Facturas
-
-**Endpoint**: `GET {{baseUrl}}/api/invoices`
+**Endpoint**: `GET {{baseUrl}}/api/parking/solvency/:cardId`
 
 **Headers**:
 ```
 Authorization: Bearer {{token}}
 ```
 
-**Query Parameters** (opcionales):
-```
-?limit=10&page=1&status=paid
-```
+**Ejemplo**: `GET {{baseUrl}}/api/parking/solvency/12345678`
 
 **Respuesta Exitosa** (200):
 ```json
 {
   "success": true,
-  "invoices": [
-    {
-      "id": 1,
-      "parkingSpace": "A1",
-      "entryTime": "2025-11-30T21:15:06.132Z",
-      "exitTime": "2025-11-30T22:30:15.456Z",
-      "amount": 15.50,
-      "felNumber": "FEL-2025-001",
-      "status": "paid"
-    }
-  ],
-  "total": 1,
-  "page": 1
+  "user": {
+    "id": 1,
+    "name": "Carmen Lopez",
+    "email": "carmen@miumg.edu.gt",
+    "role": "student",
+    "cardId": "12345678",
+    "vehiclePlate": "UMG-001",
+    "currentParkingSpace": null
+  },
+  "solvency": {
+    "isSolvent": true,
+    "isExemptRole": false,
+    "solvencyExpires": "2026-03-21T17:11:00.000Z",
+    "daysRemaining": 28,
+    "status": "VIGENTE (28 días restantes)"
+  }
 }
 ```
 
 ---
 
-### 10. Obtener Factura PDF
+### 15. Reporte de Solvencia (Admin)
 
-**Endpoint**: `GET {{baseUrl}}/api/invoices/:invoiceId/pdf`
+**Endpoint**: `GET {{baseUrl}}/api/parking/solvency-report`
 
 **Headers**:
 ```
 Authorization: Bearer {{token}}
 ```
 
-**Respuesta**: Archivo PDF descargable
+> ⚠️ Requiere rol: `admin`.
+
+**Respuesta Exitosa** (200):
+```json
+{
+  "success": true,
+  "summary": {
+    "total": 120,
+    "solvent": 95,
+    "expired": 25
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "Carmen Lopez",
+      "cardId": "12345678",
+      "vehiclePlate": "UMG-001",
+      "isSolvent": true,
+      "solvencyExpires": "2026-03-21T17:11:00.000Z",
+      "daysRemaining": 28,
+      "status": "VIGENTE"
+    }
+  ]
+}
+```
 
 ---
 
-## 🏥 Health Checks
+## 🧾 Facturas
 
-### 11. Health Check Simple
+### 16. Generar Factura / Comprobante de Pago
+
+**Endpoint**: `POST {{baseUrl}}/api/invoices/generate`
+
+**Headers**:
+```
+Authorization: Bearer {{token}}
+Content-Type: application/json
+```
+
+> ⚠️ Llamar después de registrar el pago con `/api/parking/pay`.
+
+**Body** (raw — JSON):
+```json
+{
+  "parkingLotId": 1,
+  "amount": 15.50,
+  "duration_minutes": 185
+}
+```
+
+**Respuesta Exitosa** (201):
+```json
+{
+  "message": "Factura generada exitosamente",
+  "invoice": {
+    "id": "FEL-SIM-839274",
+    "userId": 1,
+    "amount": 15.50,
+    "status": "PAID",
+    "issuedAt": "2026-02-21T18:00:00.000Z"
+  },
+  "pdfBase64": "JVBERi0xLjMK..."
+}
+```
+
+> El campo `pdfBase64` contiene el PDF codificado en Base64. Puedes decodificarlo y descargarlo directamente desde el frontend.
+
+---
+
+## 📡 IoT / Cámaras LPR
+
+### 17. Evento de Reconocimiento de Placa
+
+**Endpoint**: `POST {{baseUrl}}/api/iot/lpr/event`
+
+> ⚠️ Este endpoint es para las cámaras LPR (License Plate Recognition). En producción debe protegerse con API Key o firma HMAC.
+
+**Body** (raw — JSON):
+```json
+{
+  "plate": "UMG-001",
+  "camera_id": "CAM-ENTRY-01",
+  "event_type": "ENTRY",
+  "timestamp": "2026-02-21T17:00:00Z"
+}
+```
+
+**Valores de `event_type`**: `ENTRY` | `EXIT`
+
+**Respuesta Exitosa** (200):
+```json
+{
+  "success": true,
+  "message": "Evento LPR procesado",
+  "action": "ASSIGN",
+  "space": "A-5"
+}
+```
+
+---
+
+## ❤️ Health Checks
+
+### 18. Estado General
 
 **Endpoint**: `GET {{baseUrl}}/health`
 
 **Respuesta Exitosa** (200):
 ```json
 {
-  "status": "OK",
+  "status": "healthy",
   "uptime": 12345,
-  "timestamp": "2025-11-30T21:15:06.132Z"
+  "timestamp": "2026-02-21T17:00:00.000Z"
 }
 ```
 
 ---
 
-### 12. Health Check Detallado (Readiness)
+### 19. Liveness Probe
+
+**Endpoint**: `GET {{baseUrl}}/health/liveness`
+
+**Respuesta Exitosa** (200):
+```json
+{ "status": "alive" }
+```
+
+---
+
+### 20. Readiness Probe
 
 **Endpoint**: `GET {{baseUrl}}/health/readiness`
 
@@ -392,7 +635,7 @@ Authorization: Bearer {{token}}
     "database": "connected (PostgreSQL)",
     "redis": "connected"
   },
-  "timestamp": "2025-11-30T21:15:06.132Z"
+  "timestamp": "2026-02-21T17:00:00.000Z"
 }
 ```
 
@@ -400,64 +643,47 @@ Authorization: Bearer {{token}}
 
 ## 🔄 Flujo de Prueba Completo
 
-### Escenario 1: Usuario Nuevo - Primera Visita
+### Escenario 1: Estudiante — Ciclo Completo
 
-1. **Registrarse**
-   ```
-   POST /api/auth/register
-   ```
-
-2. **Iniciar Sesión**
-   ```
-   POST /api/auth/login
-   ```
-   ➡️ Guarda el `accessToken`
-
-3. **Ver Mi Perfil**
-   ```
-   GET /api/auth/me
-   ```
-
-4. **Asignar Espacio**
-   ```
-   POST /api/parking/assign
-   ```
-   ➡️ Recibes espacio "A1"
-
-5. **Simular Tiempo de Estacionamiento**
-   - Espera unos minutos o continúa inmediatamente
-
-6. **Salir del Parqueo**
-   ```
-   POST /api/parking/exit
-   ```
-   ➡️ Genera factura y libera espacio
-
-7. **Ver Mis Facturas**
-   ```
-   GET /api/invoices
-   ```
+```
+1. POST /api/auth/register       → Crear cuenta
+2. POST /api/auth/login          → Obtener JWT  ← guarda token
+3. GET  /api/auth/me             → Ver perfil
+4. (Admin) PUT /api/parking/solvency/:userId  → Marcar solvente
+5. GET  /api/parking/lots        → Elegir lote (id: 1)
+6. POST /api/parking/assign      → Entrar al parqueo  { "parkingLotId": 1 }
+7. POST /api/parking/pay         → Pagar tarifa       { "parkingLotId": 1 }
+8. POST /api/invoices/generate   → Generar comprobante
+9. POST /api/parking/release     → Salir del parqueo
+```
 
 ---
 
-### Escenario 2: Administrador - Monitoreo
+### Escenario 2: Admin — Monitoreo y Solvencia
 
-1. **Login como Admin** (primero crea un usuario admin en PostgreSQL)
-   ```sql
-   UPDATE users SET role = 'admin' WHERE email = 'admin@miumg.edu.gt';
-   ```
-   Luego inicia sesión con:
-   ```json
-   {
-     "email": "admin@miumg.edu.gt",
-     "password": "Admin2025!"
-   }
-   ```
+Primero, promover un usuario a admin directamente en PostgreSQL:
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'admin@miumg.edu.gt';
+```
 
-2. **Ver Estado del Parqueo**
-   ```
-   GET /api/parking/status
-   ```
+```
+1. POST /api/auth/login               → Login como admin
+2. GET  /api/parking/status           → Ver dashboard de ocupación
+3. GET  /api/parking/solvency-report  → Ver reporte de solvencias
+4. PUT  /api/parking/solvency/5       → Marcar solvente al usuario id=5
+5. GET  /api/parking/solvency/12345678 → Verificar solvencia por carné
+```
+
+---
+
+### Escenario 3: Cámara LPR — Entrada/Salida Automática
+
+```
+1. POST /api/iot/lpr/event  { "plate": "UMG-001", "event_type": "ENTRY", "camera_id": "CAM-01" }
+   → Asigna espacio automáticamente si el usuario es solvente
+2. POST /api/iot/lpr/event  { "plate": "UMG-001", "event_type": "EXIT", "camera_id": "CAM-01" }
+   → Libera espacio y calcula tarifa
+```
 
 ---
 
@@ -469,100 +695,93 @@ En la pestaña **Tests** del request de login:
 
 ```javascript
 if (pm.response.code === 200) {
-    const response = pm.response.json();
-    pm.environment.set("token", response.accessToken);
-    pm.environment.set("refreshToken", response.refreshToken);
+    const r = pm.response.json();
+    pm.environment.set("token", r.token);
+    pm.environment.set("refreshToken", r.refreshToken);
     console.log("✅ Tokens guardados");
 }
 ```
 
-### Verificar Expiración del Token
+### Verificar Token antes de cada Request
 
 En la pestaña **Pre-request Script** de cualquier request protegido:
 
 ```javascript
-const token = pm.environment.get("token");
-if (!token) {
+if (!pm.environment.get("token")) {
     console.error("❌ No hay token. Debes hacer login primero.");
 }
 ```
 
-### Colección Recomendada
-
-Organiza tus requests en carpetas:
+### Estructura Recomendada de la Colección
 
 ```
-📁 Sistema de Parqueo UMG
+📁 Sistema de Parqueo UMG v2.0
   📁 1. Autenticación
-    - Registrar Usuario
-    - Login
-    - Mi Perfil
-    - Refresh Token
-    - Logout
+    POST  - Registrar Usuario
+    POST  - Login
+    GET   - Mi Perfil
+    POST  - Refresh Token
+    POST  - Logout
+    POST  - Google OAuth
   📁 2. Parqueo
-    - Asignar Espacio
-    - Salir
-    - Ver Estado (Admin)
-  📁 3. Facturas
-    - Mis Facturas
-    - Descargar PDF
-  📁 4. Health
-    - Health Check
-    - Readiness
+    GET   - Listar Lotes
+    POST  - Asignar Espacio (Entrada)
+    POST  - Pagar Tarifa
+    POST  - Liberar Espacio (Salida)
+    GET   - Estado / Dashboard (Admin)
+    POST  - Abrir Barrera
+  📁 3. Solvencia
+    PUT   - Actualizar Solvencia
+    GET   - Consultar por Carné
+    GET   - Reporte General (Admin)
+  📁 4. Facturas
+    POST  - Generar Factura
+  📁 5. IoT / Cámaras
+    POST  - Evento LPR
+  📁 6. Simulación
+    POST  - Simular Lote Lleno
+    POST  - Vaciar Lote
+  📁 7. Health
+    GET   - Estado General
+    GET   - Liveness
+    GET   - Readiness
 ```
 
 ---
 
 ## 🐛 Errores Comunes
 
-### 401 Unauthorized
-- ❌ Token no enviado o inválido
-- ✅ Verifica que el header `Authorization: Bearer {{token}}` esté correcto
-
-### 403 Forbidden
-- ❌ No tienes permisos (rol insuficiente)
-- ✅ Algunos endpoints requieren rol `admin` o `guard`
-
-### 429 Too Many Requests
-- ❌ Excediste el rate limit
-- ✅ Espera 15 minutos o reinicia el servidor
-
-### 400 Bad Request
-- ❌ Datos de validación incorrectos
-- ✅ Revisa el mensaje de error en la respuesta
+| Código | Causa | Solución |
+|--------|-------|----------|
+| `401 Unauthorized` | Token no enviado o vencido | Verifica `Authorization: Bearer {{token}}` o renueva con `/api/auth/refresh` |
+| `402 Payment Required` | Estudiante sin solvencia mensual | Un admin/guard debe ejecutar `PUT /api/parking/solvency/:userId` |
+| `403 Forbidden` | Rol insuficiente | Verifica que el usuario tenga el rol requerido |
+| `409 Conflict` | Email o carné ya registrado | Usa otro email/carné |
+| `429 Too Many Requests` | Rate limit excedido | Espera el tiempo indicado en el encabezado `Retry-After` |
+| `400 Bad Request` | Datos inválidos | Revisa el mensaje de error en la respuesta |
 
 ---
 
-## 📚 Notas Adicionales
+## 📝 Notas Adicionales
 
 ### Duración de Tokens
 - **Access Token**: 15 minutos
 - **Refresh Token**: 7 días
 
-### Tarifas (configurables en `.env`)
-- Estudiantes: Q10.00/hora
-- Visitantes: Q15.00/hora
-- Mensualidad Estudiantes: Q250.00
-- Mensualidad Catedráticos: Q150.00
+### Roles y Permisos
+| Rol | Parqueo | Solvencia | Dashboard | Admin |
+|-----|---------|-----------|-----------|-------|
+| `student` | ✅ (con solvencia) | Solo ver la propia | ❌ | ❌ |
+| `faculty` | ✅ (exento) | Solo ver la propia | ✅ | ❌ |
+| `guard` | ✅ (exento) | Actualizar y ver | ✅ | ❌ |
+| `admin` | ✅ (exento) | Total | ✅ | ✅ |
 
-### Roles Disponibles
-- `student` - Estudiante (por defecto)
-- `faculty` - Catedrático
-- `visitor` - Visitante
-- `guard` - Guardia de seguridad
-- `admin` - Administrador
-
----
-
-## 🎯 Próximos Pasos
-
-1. Importa esta colección a Postman
-2. Configura el Environment
-3. Ejecuta el flujo completo
-4. Prueba los endpoints de Admin (requiere cambiar rol en PostgreSQL con: `UPDATE users SET role = 'admin' WHERE email = 'admin@miumg.edu.gt';`)
-5. Descarga facturas en PDF
+### Acceso a la Documentación Completa
+La documentación Swagger interactiva está disponible en:  
+**[http://localhost:3000/api-docs](http://localhost:3000/api-docs)**
 
 ---
 
 **Documentación actualizada**: 21 de febrero de 2026  
-**Soporte**: soporte@umg.edu.gt
+**Versión del Sistema**: 2.0.0  
+**Soporte**: soporte@miumg.edu.gt

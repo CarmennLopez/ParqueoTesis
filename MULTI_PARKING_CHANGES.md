@@ -20,12 +20,12 @@ currentParkingSpace: { type: String, default: null }
 
 **AHORA:**
 ```javascript
-currentParkingLot: { 
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ParkingLot',
-    default: null
+currentParkingLotId: { 
+    type: DataTypes.INTEGER,
+    references: { model: 'ParkingLots', key: 'id' },
+    defaultValue: null
 },
-currentParkingSpace: { type: String, default: null }
+currentParkingSpace: { type: DataTypes.STRING, defaultValue: null }
 ```
 
 **Impacto:** Cada usuario ahora tiene referencia a qué parqueo está usando actualmente.

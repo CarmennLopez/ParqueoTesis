@@ -42,7 +42,7 @@ const logAudit = async (req, action, resource, details = {}, status = 'SUCCESS')
         });
 
     } catch (error) {
-        // Fallback: Si falla guardar en Mongo, al menos loguearlo en archivo/consola
+        // Fallback: Si falla guardar en PostgreSQL, al menos loguearlo en archivo/consola
         logger.error('CRITICAL: Failed to save Audit Log', {
             error: error.message,
             auditData: { action, resource, status, details }

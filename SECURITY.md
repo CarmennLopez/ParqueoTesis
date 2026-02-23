@@ -77,10 +77,10 @@ router.post('/endpoint', [
 
 ## 4. BASE DE DATOS
 
-### MongoDB
-- **Conexión**: Variables de entorno (`MONGODB_URI`)
+### PostgreSQL
+- **Conexión**: Variables de entorno (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`)
 - **Autenticación**: Usuario y contraseña requeridos
-- **Sanitización**: Validación de inputs contra inyección
+- **Protección**: Sequelize ORM previene SQL Injection automáticamente
 
 ### Redis
 - **Caché**: Tokens y sesiones
@@ -101,7 +101,11 @@ REDIS_URL=redis://:tu_password_seguro@redis-host:6379
 ### Variables Esenciales:
 ```env
 JWT_SECRET=                    # ⚠️ CRÍTICO - 32+ caracteres aleatorios
-MONGODB_URI=                   # Credenciales seguras
+DB_HOST=                       # Host de PostgreSQL
+DB_PORT=5432                   # Puerto de PostgreSQL
+DB_NAME=                       # Nombre de la base de datos
+DB_USER=                       # Usuario de PostgreSQL
+DB_PASSWORD=                   # Contraseña segura
 REDIS_URL=                     # Con autenticación en prod
 NODE_ENV=production            # Nunca 'development' en producción
 ALLOWED_ORIGINS=               # Solo dominios confiables
@@ -128,7 +132,7 @@ logs/
 
 ### Auditoría
 - Cada acción crítica registra: usuario, IP, timestamp
-- Tabla AuditLog en MongoDB
+- Tabla `AuditLogs` en **PostgreSQL**
 - Consultas auditables por usuario
 
 ```javascript
@@ -155,7 +159,7 @@ Esto previene duplicación si una request se reinicia.
 - [ ] `JWT_SECRET` generado aleatoriamente
 - [ ] CORS limitado a dominios autorizados
 - [ ] HTTPS/TLS en todas las conexiones
-- [ ] MongoDB con credenciales fuertes
+- [ ] PostgreSQL con credenciales fuertes
 - [ ] Redis con autenticación
 - [ ] Logs rotativos habilitados
 - [ ] Health checks configurados
@@ -171,7 +175,10 @@ docker build -t parking-api:prod .
 docker run -d \
   -e NODE_ENV=production \
   -e JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))") \
-  -e MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/db \
+  -e DB_HOST=postgres-host \
+  -e DB_NAME=parqueo_db \
+  -e DB_USER=parqueo_user \
+  -e DB_PASSWORD=contraseña_segura \
   parking-api:prod
 ```
 
@@ -181,8 +188,8 @@ docker run -d \
 
 | Vulnerabilidad | Mitigación |
 |---|---|
-| SQL Injection | Mongoose ODM + validación |
-| NoSQL Injection | express-mongo-sanitize (comentado - buscar alternativa) |
+| SQL Injection | Sequelize ORM + validación de inputs |
+| NoSQL Injection | No aplica (usamos PostgreSQL relacional) |
 | XSS | Content-Security-Policy vía Helmet |
 | CSRF | Token validation en formularios |
 | Weak JWT | Algoritmo HS256 + secret fuerte |
@@ -208,14 +215,14 @@ docker run -d \
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [Node.js Security Best Practices](https://nodejs.org/en/docs/guides/security/)
 - [JWT Best Practices](https://tools.ietf.org/html/rfc8949)
-- [MongoDB Security](https://docs.mongodb.com/manual/security/)
+- [PostgreSQL Security](https://www.postgresql.org/docs/current/security.html)
 
 ---
 
 ## 12. CONTACTO Y ESCALAMIENTO
 
 Para reportar vulnerabilidades de seguridad:
-- 📧 Email: security@umg.edu.gt
+- 📧 Email: security@miumg.edu.gt
 - 🔒 **NO** reportar públicamente
 - ⏰ Respuesta esperada: 24 horas
 

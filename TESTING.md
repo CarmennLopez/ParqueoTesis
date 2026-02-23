@@ -177,13 +177,13 @@ npm test -- --clearCache
 ```
 
 ### "Connection timeout"
-Asegurar que MongoDB está corriendo:
+Asegurar que PostgreSQL está corriendo:
 ```bash
-# Linux/Mac
-mongod
+# Con Docker Compose
+docker-compose up -d postgres
 
-# Windows (si está instalado)
-net start MongoDB
+# Windows (si está instalado localmente)
+net start postgresql-x64-16
 ```
 
 ### "Tests no se ejecutan"

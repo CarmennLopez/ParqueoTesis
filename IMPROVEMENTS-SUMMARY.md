@@ -143,7 +143,7 @@ npm run docker:down  # Detener servicios
 
 ### Mejoras Implementadas
 ✅ JWT_SECRET generado aleatoriamente (no hardcodeado)
-✅ Credenciales de MongoDB/Redis en variables de entorno
+✅ Credenciales de PostgreSQL/Redis en variables de entorno
 ✅ `.env` protegido en `.gitignore`
 ✅ Guía de deployment seguro
 ✅ Rate limiting documentado
@@ -152,7 +152,9 @@ npm run docker:down  # Detener servicios
 ### Variables Críticas (Actualizar en Producción)
 ```env
 JWT_SECRET=<generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
-MONGODB_URI=<usar cluster MongoDB Atlas>
+DB_HOST=<host de PostgreSQL>
+DB_NAME=<nombre de la base de datos>
+DB_PASSWORD=<contraseña segura>
 REDIS_URL=<usar Redis con autenticación>
 ALLOWED_ORIGINS=<solo dominios autorizados>
 ```
@@ -172,7 +174,7 @@ npm test                   # Ejecutar tests
 ### Opción 2: Docker (Recomendado)
 ```bash
 npm install
-npm run docker:up          # Inicia API + MongoDB + Redis
+npm run docker:up          # Inicia API + PostgreSQL + Redis
 docker-compose exec api npm run seed:all
 curl http://localhost:3000/health/liveness
 ```

@@ -137,14 +137,17 @@ PORT=3001
 npm run dev
 ```
 
-### Error: "MongoDB connection refused"
+### Error: "PostgreSQL connection refused"
 ```bash
-# Solución 1 - Instalar MongoDB local
-# Solución 2 - Usar Docker
+# Solución 1 - Usar Docker
 npm run docker:up
 
-# Solución 3 - Cambiar MONGODB_URI en .env
-MONGODB_URI=mongodb://localhost:27017/parqueo_umg
+# Solución 2 - Configurar variables en .env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=parqueo_umg
+DB_USER=postgres
+DB_PASSWORD=tu_password
 ```
 
 ### Error: "Redis not available"
@@ -213,7 +216,7 @@ REDIS_SIMULATION_MODE=true
 
 4. **Contactar:**
    - Ver: SECURITY.md (sección Contacto)
-   - Email: dev@umg.edu.gt
+   - Email: dev@miumg.edu.gt
 
 ---
 

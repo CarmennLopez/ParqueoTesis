@@ -39,10 +39,19 @@ app.use(idempotency);
 // Routes
 app.get('/', (req, res) => {
     res.json({
-        message: '¡API de parqueo UMG funcionando!',
+        message: '¡API de Parqueo UMG funcionando!',
         version: '2.0.0',
         status: 'active',
-        endpoints: { auth: '/api/auth', parking: '/api/parking' }
+        docs: '/api-docs',
+        endpoints: {
+            auth: { base: '/api/auth', routes: ['POST /register', 'POST /login', 'POST /refresh', 'POST /logout', 'GET /me', 'POST /google'] },
+            parking: { base: '/api/parking', routes: ['GET /lots', 'POST /lots', 'POST /assign', 'POST /pay', 'POST /release', 'GET /status', 'POST /gate/open'] },
+            solvency: { base: '/api/parking', routes: ['PUT /solvency/:userId', 'GET /solvency/:cardId', 'GET /solvency-report'] },
+            simulate: { base: '/api/parking', routes: ['POST /simulate/fill', 'POST /simulate/empty'] },
+            invoices: { base: '/api/invoices', routes: ['POST /generate'] },
+            iot: { base: '/api/iot', routes: ['POST /lpr/event'] },
+            health: { base: '/health', routes: ['GET /', 'GET /liveness', 'GET /readiness'] },
+        },
     });
 });
 

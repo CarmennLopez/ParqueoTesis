@@ -21,7 +21,7 @@ npm run docker:up
 
 ### 4. Crear Datos de Prueba
 ```bash
-# Esperar 10 segundos para que MongoDB inicie
+# Esperar 10 segundos para que PostgreSQL inicie
 docker-compose exec api npm run seed:all
 ```
 
@@ -42,7 +42,7 @@ curl http://localhost:3000/health/liveness
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@umg.edu.gt",
+    "email": "admin@miumg.edu.gt",
     "password": "Admin@12345"
   }'
 ```
@@ -88,9 +88,9 @@ npm test -- --coverage
 
 | Email | Contraseña | Rol |
 |-------|-----------|-----|
-| admin@umg.edu.gt | Admin@12345 | ADMIN |
-| guard@umg.edu.gt | Guard@12345 | GUARD |
-| juan.perez@umg.edu.gt | Faculty@12345 | FACULTY |
+| admin@miumg.edu.gt | Admin@12345 | ADMIN |
+| guard@miumg.edu.gt | Guard@12345 | GUARD |
+| juan.perez@miumg.edu.gt | Faculty@12345 | FACULTY |
 | carlos.lopez@estudiante.umg.edu.gt | Student@12345 | STUDENT |
 | maria.garcia@external.com | Visitor@12345 | VISITOR |
 

@@ -240,7 +240,7 @@ Respuesta:
 curl -X POST http://localhost:3000/api/auth/login `
   -H "Content-Type: application/json" `
   -d '{
-    "email": "admin@umg.edu.gt",
+    "email": "admin@miumg.edu.gt",
     "password": "Admin2025!"
   }'
 ```
