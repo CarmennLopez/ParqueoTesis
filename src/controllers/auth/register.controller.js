@@ -1,12 +1,12 @@
 const asyncHandler = require('express-async-handler');
 const { User } = require('../../models');
-const { generateAccessToken } = require('../../utils/tokenUtils');
+const { generateAccessToken, generateRefreshToken } = require('../../utils/tokenUtils');
 const { logAudit } = require('../../utils/auditLogger');
 const { USER_ROLES } = require('../../config/constants');
 
 const register = asyncHandler(async (req, res) => {
     try {
-        // Soporta både camelCase y snake_case
+        // Soporta camelCase y snake_case
         const { name, email, password, role } = req.body;
         const cardId = req.body.cardId || req.body.card_id;
         const vehiclePlate = req.body.vehiclePlate || req.body.vehicle_plate;
@@ -24,9 +24,9 @@ const register = asyncHandler(async (req, res) => {
         // Verificar si existe
         const userExists = await User.findOne({ where: { email } });
         if (userExists) {
-            return res.status(400).json({
+            return res.status(409).json({
                 success: false,
-                message: 'El usuario ya existe con ese email'
+                message: 'El correo ya está registrado'
             });
         }
 
@@ -44,13 +44,27 @@ const register = asyncHandler(async (req, res) => {
 
         logAudit(req, 'REGISTER', 'User', { userId: user.id, email: user.email });
 
+        const userForToken = { ...user.toJSON(), _id: user.id };
+        const accessToken = generateAccessToken(userForToken);
+        const refreshToken = await generateRefreshToken(userForToken);
+
         res.status(201).json({
             success: true,
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            token: generateAccessToken({ ...user.toJSON(), _id: user.id })
+            accessToken,
+            refreshToken,
+            user: {
+                _id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                cardId: user.cardId,
+                vehiclePlate: user.vehiclePlate,
+                hasPaid: user.hasPaid,
+                currentParkingSpace: user.currentParkingSpace ?? null,
+                currentParkingLotId: user.currentParkingLotId ?? null,
+                isSolvent: user.isSolvent,
+                solvencyExpires: user.solvencyExpires ?? null
+            }
         });
     } catch (error) {
         console.error('❌ Error en registro:', error.message);
