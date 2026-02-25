@@ -1,19 +1,42 @@
 const { Sequelize } = require('sequelize');
 const logger = require('./logger');
 
-// Usar variables de entorno separadas para mayor control
-const dbHost = process.env.DB_HOST || 'localhost';
-const dbPort = process.env.DB_PORT || 5432;
-const dbName = process.env.DB_NAME || 'parking_db';
-const dbUser = process.env.DB_USER || 'postgres';
-const dbPassword = process.env.DB_PASSWORD || 'postgres';
-
-// O usar DATABASE_URL si está disponible
-const databaseUrl = process.env.DATABASE_URL;
-
+// Usar variables individuales del .env (DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME)
+// Si no existen, intenta con DATABASE_URL como fallback
 let sequelize;
 
-if (databaseUrl) {
+if (process.env.DB_HOST) {
+    sequelize = new Sequelize(
+        process.env.DB_NAME || 'parking_db',
+        process.env.DB_USER || 'postgres',
+        process.env.DB_PASSWORD || '',
+        {
+            host: process.env.DB_HOST || 'localhost',
+            port: parseInt(process.env.DB_PORT || '5432'),
+            dialect: 'postgres',
+            logging: (msg) => logger.debug(msg),
+            pool: {
+                max: 10,
+                min: 0,
+                acquire: 30000,
+                idle: 10000
+            },
+            retry: {
+                match: [
+                    /SequelizeConnectionError/,
+                    /SequelizeConnectionRefusedError/,
+                    /SequelizeHostNotFoundError/,
+                    /SequelizeHostNotReachableError/,
+                    /SequelizeInvalidConnectionError/,
+                    /SequelizeConnectionTimedOutError/
+                ],
+                max: 5
+            }
+        }
+    );
+} else {
+    // Fallback a DATABASE_URL
+    const databaseUrl = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/parking_db';
     sequelize = new Sequelize(databaseUrl, {
         dialect: 'postgres',
         logging: (msg) => logger.debug(msg),
@@ -22,19 +45,17 @@ if (databaseUrl) {
             min: 0,
             acquire: 30000,
             idle: 10000
-        }
-    });
-} else {
-    sequelize = new Sequelize(dbName, dbUser, dbPassword, {
-        host: dbHost,
-        port: dbPort,
-        dialect: 'postgres',
-        logging: (msg) => logger.debug(msg),
-        pool: {
-            max: 10,
-            min: 0,
-            acquire: 30000,
-            idle: 10000
+        },
+        retry: {
+            match: [
+                /SequelizeConnectionError/,
+                /SequelizeConnectionRefusedError/,
+                /SequelizeHostNotFoundError/,
+                /SequelizeHostNotReachableError/,
+                /SequelizeInvalidConnectionError/,
+                /SequelizeConnectionTimedOutError/
+            ],
+            max: 5
         }
     });
 }
@@ -44,7 +65,7 @@ const connectDB = async () => {
         await sequelize.authenticate();
         logger.info('✅ Conexión a PostgreSQL establecida correctamente.');
 
-        // Sincronizar modelos (solo en desarrollo, usar migraciones en prod)
+        // Sincronizar modelos en desarrollo
         if (process.env.NODE_ENV === 'development') {
             await sequelize.sync({ alter: true });
             logger.info('🔄 Modelos sincronizados con la base de datos.');

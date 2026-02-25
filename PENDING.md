@@ -29,7 +29,7 @@ npm run seed:all
 
 ### 3. Docker Setup
 **Estado**: ⏳ Requiere verificación
-- Necesita: PostgreSQL, Redis corriendo
+- Necesita: MongoDB, Redis corriendo
 - Comando: `npm run docker:up`
 - Problema: No había información clara sobre estado
 
@@ -51,7 +51,7 @@ npm install
 # 2. Ejecutar tests (sin Docker)
 npm test
 
-# 3. Verificar seeders (si PostgreSQL local está corriendo)
+# 3. Verificar seeders (si MongoDB local está corriendo)
 npm run seed:all
 
 # 4. Iniciar servidor en desarrollo
@@ -67,7 +67,7 @@ npm install
 npm run docker:build
 npm run docker:up
 
-# 3. Esperar a que PostgreSQL esté listo (30 segundos)
+# 3. Esperar a que MongoDB esté listo (30 segundos)
 sleep 30
 
 # 4. Crear datos de prueba
@@ -87,7 +87,7 @@ docker-compose exec api npm test
 ### Para Testing Local
 - ✅ Node.js 16+
 - ✅ npm 7+
-- ⏳ PostgreSQL 14+ (opcional, para seed:all)
+- ⏳ MongoDB 5+ (opcional, para seed:all)
 - ⏳ Redis (opcional, para cache)
 
 ### Para Docker
@@ -115,7 +115,7 @@ docker-compose exec api npm test
 ### Docker
 - [ ] Docker Desktop corriendo
 - [ ] `npm run docker:up` inicia servicios
-- [ ] `docker-compose ps` muestra 3 contenedores (api, postgres, redis)
+- [ ] `docker-compose ps` muestra 3 contenedores (api, mongo, redis)
 - [ ] `npm run seed:all` dentro del contenedor funciona
 - [ ] `npm run docker:down` detiene limpiamente
 
@@ -137,17 +137,14 @@ PORT=3001
 npm run dev
 ```
 
-### Error: "PostgreSQL connection refused"
+### Error: "MongoDB connection refused"
 ```bash
-# Solución 1 - Usar Docker
+# Solución 1 - Instalar MongoDB local
+# Solución 2 - Usar Docker
 npm run docker:up
 
-# Solución 2 - Configurar variables en .env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=parqueo_umg
-DB_USER=postgres
-DB_PASSWORD=tu_password
+# Solución 3 - Cambiar MONGODB_URI en .env
+MONGODB_URI=mongodb://localhost:27017/parqueo_umg
 ```
 
 ### Error: "Redis not available"
@@ -216,7 +213,7 @@ REDIS_SIMULATION_MODE=true
 
 4. **Contactar:**
    - Ver: SECURITY.md (sección Contacto)
-   - Email: dev@miumg.edu.gt
+   - Email: dev@umg.edu.gt
 
 ---
 

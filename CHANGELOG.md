@@ -43,7 +43,7 @@ npm run seed:all       # Todos los seeders
 
 #### Mejoras
 - ✅ Actualización de `.env` con valores seguros (sin credenciales hardcodeadas)
-- ✅ Documentación de variables críticas (JWT_SECRET, DB_HOST/DB_NAME, REDIS_URL)
+- ✅ Documentación de variables críticas (JWT_SECRET, MONGODB_URI, REDIS_URL)
 - ✅ Guía de generación de secretos seguros
 - ✅ Rate limiting documentado (5 intentos/15 min en login)
 - ✅ CORS configurado correctamente
@@ -53,11 +53,7 @@ npm run seed:all       # Todos los seeders
 #### Variables de Entorno
 ```env
 JWT_SECRET=8f9d7e3c5b2a1f6e9d4c8b1a7f3e2d5c9b6a1f4e8d3c7b2a5f1e9d6c4b8a
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=parqueo_umg
-DB_USER=postgres
-DB_PASSWORD=tu_password_seguro
+MONGODB_URI=mongodb://localhost:27017/parqueo_umg
 REDIS_URL=redis://localhost:6379
 ```
 
@@ -95,7 +91,7 @@ REDIS_URL=redis://localhost:6379
 - ✅ ENTRYPOINT correctamente configurado
 - ✅ Healthcheck cada 30 segundos
 - ✅ Usuario no privilegiado (node)
-- ✅ docker-compose.yml funcional (API + PostgreSQL + Redis)
+- ✅ docker-compose.yml funcional (API + MongoDB + Redis)
 
 ### 🏗️ Estructura de Directorios
 
@@ -133,7 +129,7 @@ TesisProyect/
 - JWT y autenticación
 - CORS y rate limiting
 - Validación de datos
-- Base de datos (PostgreSQL, Redis)
+- Base de datos (MongoDB, Redis)
 - Variables de entorno críticas
 - Logging y auditoría
 - Seguridad en producción
@@ -205,7 +201,7 @@ npm run docker:up
 docker-compose logs -f api
 
 # Backup de BD
-docker-compose exec postgres pg_dump -U $DB_USER $DB_NAME > backup.sql
+docker-compose exec mongo mongodump
 ```
 
 ### 🔍 Verificación
@@ -256,16 +252,16 @@ docker-compose exec postgres pg_dump -U $DB_USER $DB_NAME > backup.sql
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
 
-2. **Testing**: Requiere PostgreSQL y Redis corriendo
+2. **Testing**: Requiere MongoDB y Redis corriendo
    ```bash
-   # Opción 1 - Docker
-   npm run docker:up
+   # MongoDB
+   mongod
    
-   # Opción 2 - Redis local
+   # Redis
    redis-server
    ```
 
-3. **Docker**: Incluye PostgreSQL y Redis automáticamente
+3. **Docker**: Incluye MongoDB y Redis automáticamente
    ```bash
    npm run docker:up
    ```

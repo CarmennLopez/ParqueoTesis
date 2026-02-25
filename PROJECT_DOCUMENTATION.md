@@ -1,1360 +1,939 @@
-# 📋 Documentación Técnica - Sistema de Gestión de Estacionamiento
+# 📚 Documentación del Proyecto — API de Parqueo UMG
 
-**Fecha de Creación:** 21 de febrero de 2026  
-**Estado del Proyecto:** En desarrollo - Fase de Testing de Endpoints  
-**Versión:** 1.0.0
-
----
-
-## 📑 Tabla de Contenidos
-
-1. [Descripción General](#descripción-general)
-2. [Requisitos del Sistema](#requisitos-del-sistema)
-3. [Instalación y Configuración](#instalación-y-configuración)
-4. [Estructura del Proyecto](#estructura-del-proyecto)
-5. [Base de Datos](#base-de-datos)
-6. [Arquitectura de API](#arquitectura-de-api)
-7. [Autenticación y Seguridad](#autenticación-y-seguridad)
-8. [Validaciones Implementadas](#validaciones-implementadas)
-9. [Endpoints de API](#endpoints-de-api)
-10. [Testing](#testing)
-11. [Próximos Pasos](#próximos-pasos)
+> **Versión:** 2.0.0 · **Stack:** Node.js + Express 5 + PostgreSQL + Sequelize + Redis + Socket.io + MQTT  
+> **Autor:** Carmen Lopez · **Actualizado:** 2026-02-24
 
 ---
 
-## 🎯 Descripción General
+## Índice
 
-### Propósito del Proyecto
-
-El **Sistema de Gestión de Estacionamiento** es una plataforma integral diseñada para:
-
-- **Gestión de Usuarios:** Registro, autenticación y control de acceso de estudiantes y personal administrativo
-- **Asignación de Espacios:** Automatizar la asignación dinámica de espacios de estacionamiento
-- **Control de Entrada/Salida:** Registrar entrada y salida de vehículos con timestamps precisos
-- **Gestión de Pagos:** Procesar pagos por uso de estacionamiento con múltiples planes de precios
-- **Generación de Facturas:** Crear y gestionar facturas digitales
-- **Auditoría:** Registrar todas las acciones para cumplimiento normativo
-- **IoT Integration:** Conectar sensores de estacionamiento vía MQTT
-
-### Escenarios de Uso Principal
-
-1. **Estudiante registra vehículo** → Se asigna espacio automáticamente → Ingresa al lote → Realiza pago → Sale del lote
-2. **Administrador gestiona lotes** → Define espacios y precios → Monitorea ocupación → Genera reportes
-3. **Sistema IoT reporta estado** → Actualiza disponibilidad de espacios en tiempo real
-
----
-
-## 💻 Requisitos del Sistema
-
-### Versiones Instaladas (Verificadas)
-
-| Componente | Versión | Ubicación | Estado |
-|-----------|---------|-----------|--------|
-| **Node.js** | 22.19.0 | Sistema | ✅ Activo |
-| **npm** | 10.9.0 | Sistema | ✅ Activo |
-| **PostgreSQL** | 18.2 | localhost:5432 | ✅ Activo |
-| **Redis** | Latest | localhost:6379 | ✅ Activo |
-| **Express** | 5.1.0 | node_modules | ✅ Instalado |
-| **Sequelize** | 6.37.7 | node_modules | ✅ Instalado |
-| **pg** (PostgreSQL Driver) | 8.11.3 | node_modules | ✅ Instalado |
-
-### Dependencias Principales (package.json)
-
-```json
-{
-  "dependencies": {
-    "express": "^5.1.0",
-    "sequelize": "^6.37.7",
-    "pg": "^8.11.3",
-    "pg-hstore": "^2.3.4",
-    "jsonwebtoken": "^9.0.2",
-    "bcrypt": "^5.1.1",
-    "express-validator": "^7.0.0",
-    "redis": "^4.6.11",
-    "mqtt": "^5.3.5",
-    "socket.io": "^4.7.2",
-    "swagger-ui-express": "^5.0.0",
-    "swagger-jsdoc": "^6.2.8",
-    "morgan": "^1.10.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2",
-    "jest": "^29.7.0",
-    "supertest": "^6.3.3"
-  }
-}
-```
-
-### Requisitos de Hardware Recomendados
-
-- **Procesador:** 2 GHz o superior
-- **RAM:** 4 GB mínimo (8 GB recomendado)
-- **Disco:** 10 GB disponibles
-- **Conexión:** Acceso a localhost (desarrollo local)
+1. [Descripción General](#1-descripción-general)
+2. [Stack Tecnológico](#2-stack-tecnológico)
+3. [Estructura de Archivos](#3-estructura-de-archivos)
+4. [Variables de Entorno (.env)](#4-variables-de-entorno-env)
+5. [Roles de Usuario](#5-roles-de-usuario)
+6. [Autenticación (JWT + Refresh Tokens)](#6-autenticación-jwt--refresh-tokens)
+7. [Endpoints — Referencia Completa](#7-endpoints--referencia-completa)
+   - [Auth — `/api/auth`](#71-auth----apiauth)
+   - [Parking — `/api/parking`](#72-parking----apiparking)
+   - [Invoices — `/api/invoices`](#73-invoices----apiinvoices)
+   - [IoT — `/api/iot`](#74-iot----apiiot)
+   - [Health — `/health`](#75-health----health)
+8. [Modelos de Base de Datos](#8-modelos-de-base-de-datos)
+9. [Middleware](#9-middleware)
+10. [Flujo de Negocio Principal](#10-flujo-de-negocio-principal)
+11. [Controladores — Responsabilidades](#11-controladores--responsabilidades)
+12. [Servicios Externos](#12-servicios-externos)
+13. [Rate Limiting](#13-rate-limiting)
+14. [Scripts Disponibles](#14-scripts-disponibles)
+15. [Estado de Implementación](#15-estado-de-implementación)
 
 ---
 
-## 🚀 Instalación y Configuración
+## 1. Descripción General
 
-### 1. Instalación de PostgreSQL 18.2
+API REST para un **Sistema de Gestión de Parqueo Universitario** (Tesis UMG). Permite:
 
-```bash
-# Windows: Descargar desde https://www.postgresql.org/download/windows/
-# Versión utilizada: PostgreSQL 18.2
-
-# Verificar instalación
-"C:\Program Files\PostgreSQL\18\bin\psql.exe" --version
-# Resultado esperado: psql (PostgreSQL) 18.2
-
-# Configuración de autenticación (pg_hba.conf)
-# Ubicación: C:\Program Files\PostgreSQL\18\data\pg_hba.conf
-# Línea para localhost:
-# host    all             all             127.0.0.1/32            trust
-# host    all             all             ::1/128                 trust
-```
-
-### 2. Instalación de Redis
-
-```bash
-# Windows: Usar Chocolatey
-choco install redis-64 -y
-
-# Verificar instalación
-redis-cli --version
-# Resultado esperado: redis-cli 7.x.x (o superior)
-
-# Iniciar servicio Redis
-redis-cli
-# Verificar conexión
-ping
-# Resultado esperado: PONG
-```
-
-### 3. Instalación de Dependencias del Proyecto
-
-```bash
-# Navegar al directorio del proyecto
-cd c:\Users\azuce\OneDrive\Escritorio\TesisProyect\api
-
-# Instalar todas las dependencias
-npm install
-
-# Verificar instalación exitosa
-npm list --depth=0
-```
-
-### 4. Configuración de Variables de Entorno
-
-Crear archivo `.env` en `c:\Users\azuce\OneDrive\Escritorio\TesisProyect\api`:
-
-```env
-# ===== DATABASE CONFIGURATION =====
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=parking_db
-DB_USER=postgres
-DB_PASSWORD=
-NODE_ENV=development
-
-# ===== SERVER CONFIGURATION =====
-PORT=3000
-API_PREFIX=/api
-
-# ===== AUTHENTICATION =====
-JWT_SECRET=tu_secreto_jwt_muy_seguro_aqui_cambiar_en_produccion
-JWT_EXPIRE=24h
-JWT_REFRESH_EXPIRE=7d
-
-# ===== REDIS CONFIGURATION =====
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-
-# ===== MQTT CONFIGURATION =====
-MQTT_BROKER=mqtt://localhost:1883
-MQTT_USERNAME=
-MQTT_PASSWORD=
-
-# ===== CORS CONFIGURATION =====
-CORS_ORIGIN=http://localhost:3000,http://localhost:3001
-```
-
-### 5. Crear Base de Datos PostgreSQL
-
-```bash
-# Conectarse a PostgreSQL
-"C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h 127.0.0.1
-
-# Crear base de datos
-CREATE DATABASE parking_db;
-
-# Verificar creación
-\l
-# Resultado: parking_db aparecerá en la lista
-
-# Salir
-\q
-```
-
-### 6. Inicializar Modelos (Sequelize)
-
-```bash
-# Ejecutar el servidor (auto-crea las tablas)
-npm start
-
-# El servidor ejecutará las migraciones de Sequelize automáticamente
-# Verificar en logs: "Database synchronized"
-```
-
-### 7. Insertar Datos Iniciales (Opcional)
-
-```bash
-# Ejecutar seeders
-node seeders/seedUsers.js
-node seeders/seedParkingLots.js
-node seeders/seedPricingPlans.js
-```
+- Registro e inicio de sesión de usuarios universitarios (incluyendo Google Auth para cuentas `@miumg.edu.gt`)
+- Asignación y liberación de espacios de parqueo en múltiples lotes
+- Pago de tarifa (motor de precios por horas)
+- Panel de administración y de garita (guard)
+- Integración con IoT via **MQTT** (cámaras LPR — reconocimiento de placas)
+- Tiempo real con **Socket.io**
+- Generación de facturas (con soporte FEL)
+- Historial de auditoría
 
 ---
 
-## 📂 Estructura del Proyecto
+## 2. Stack Tecnológico
+
+| Capa | Tecnología |
+|---|---|
+| Runtime | Node.js + Express 5 |
+| Base de Datos | PostgreSQL + PostGIS (geometría de puntos GPS) |
+| ORM | Sequelize 6 |
+| Caché | Redis (ioredis) |
+| Autenticación | JWT (access 15 min) + Refresh Token (7 días) + Redis |
+| Google Auth | `google-auth-library` (solo cuentas `@miumg.edu.gt`) |
+| Tiempo Real | Socket.io |
+| IoT | MQTT (broker externo) |
+| Seguridad | Helmet, CORS, Rate Limiting, Idempotency Middleware |
+| Logging | Winston + DailyRotateFile |
+| PDF / Facturas | pdf-lib |
+| Validación | express-validator |
+
+---
+
+## 3. Estructura de Archivos
 
 ```
 TesisProyect/
-├── api/
-│   ├── src/
-│   │   ├── config/
-│   │   │   ├── constants.js          # Constantes de la aplicación
-│   │   │   ├── database.js           # Configuración de Sequelize
-│   │   │   ├── logger.js             # Configuración de Morgan para logs
-│   │   │   ├── redisClient.js        # Conexión a Redis
-│   │   │   └── swagger.js            # Configuración de OpenAPI/Swagger
-│   │   │
-│   │   ├── controllers/
-│   │   │   ├── authController.js     # Lógica de autenticación
-│   │   │   ├── parkingController.js  # Lógica de estacionamiento
-│   │   │   ├── invoiceController.js  # Lógica de facturas
-│   │   │   ├── healthController.js   # Health checks
-│   │   │   └── iotController.js      # Integración IoT
-│   │   │
-│   │   ├── models/
-│   │   │   ├── user.js               # Modelo de usuario (Sequelize)
-│   │   │   ├── ParkingLot.js          # Modelo de lote de estacionamiento
-│   │   │   ├── ParkingSpace.js        # Modelo de espacio individual
-│   │   │   ├── PricingPlan.js         # Modelo de planes de precios
-│   │   │   ├── Invoice.js             # Modelo de facturas
-│   │   │   └── AuditLog.js            # Modelo de auditoría
-│   │   │
-│   │   ├── routes/
-│   │   │   ├── authRoutes.js          # Rutas de autenticación
-│   │   │   ├── parkingRoutes.js       # Rutas de estacionamiento
-│   │   │   ├── invoiceRoutes.js       # Rutas de facturación
-│   │   │   ├── iotRoutes.js           # Rutas IoT
-│   │   │   └── healthRoutes.js        # Rutas de health check
-│   │   │
-│   │   ├── middleware/
-│   │   │   ├── authMiddleware.js      # Verificación de JWT
-│   │   │   ├── authorize.js           # Control de roles/permisos
-│   │   │   ├── errorHandler.js        # Manejo centralizado de errores
-│   │   │   ├── rateLimitMiddleware.js # Limitación de rate
-│   │   │   ├── idempotencyMiddleware.js # Idempotencia en transacciones
-│   │   │   ├── sanitizationMiddleware.js # Sanitización de input
-│   │   │   ├── versionMiddleware.js   # Control de versión de API
-│   │   │   ├── apiKeyMiddleware.js    # Validación de API keys
-│   │   │   └── validators/
-│   │   │       ├── authValidators.js  # Validaciones de auth (campos, email, password)
-│   │   │       └── parkingValidators.js # Validaciones de parking
-│   │   │
-│   │   ├── services/
-│   │   │   ├── mqttService.js         # Servicio MQTT para IoT
-│   │   │   └── socketService.js       # WebSocket para actualizaciones en tiempo real
-│   │   │
-│   │   ├── utils/
-│   │   │   ├── auditLogger.js         # Registro de auditoría
-│   │   │   ├── pricingEngine.js       # Cálculo de tarifas
-│   │   │   ├── tokenUtils.js          # Utilidades JWT
-│   │   │   └── transactionHelper.js   # Helpers para transacciones BD
-│   │   │
-│   │   ├── scripts/
-│   │   │   ├── initPricingPlans.js    # Inicialización de planes
-│   │   │   └── checkExpirations.js    # Verificación de tokens expirados
-│   │   │
-│   │   └── app.js                      # Configuración de Express (middleware, rutas)
-│   │
-│   ├── __tests__/
-│   │   ├── auth.test.js                # Tests de autenticación
-│   │   └── setup.js                    # Setup de tests
-│   │
-│   ├── seeders/
-│   │   ├── seedUsers.js                # Datos iniciales de usuarios
-│   │   ├── seedParkingLots.js           # Datos iniciales de lotes
-│   │   └── seedPricingPlans.js          # Datos iniciales de planes
-│   │
-│   ├── server.js                        # Punto de entrada (startServer)
-│   ├── test-register.js                 # Script de testing local
-│   ├── test-register-correct.js         # Script de testing HTTP
-│   ├── package.json                     # Dependencias
-│   ├── jest.config.js                   # Configuración de Jest
-│   ├── .env                             # Variables de entorno
-│   └── .env.example                     # Template .env
-│
-├── logs/                                 # Archivos de log
-├── coverage/                             # Cobertura de tests
-├── docker-compose.yml                   # Orquestación de contenedores
-├── Dockerfile                            # Imagen Docker
-├── README.md                             # Guía general
-├── PROJECT_DOCUMENTATION.md              # Este archivo
-└── ... (otros archivos de documentación)
+├── server.js                  # Entry point (HTTP + Socket.io)
+├── seed.js                    # Seed principal (parqueos)
+├── seeders/                   # Seeders específicos
+│   ├── seedUsers.js
+│   └── seedPricingPlans.js
+└── src/
+    ├── app.js                 # Configuración Express (rutas, middleware)
+    ├── config/
+    │   ├── constants.js       # Roles, tarifas, JWT expiry
+    │   ├── database.js        # Conexión Sequelize/PostgreSQL
+    │   ├── redis.js           # Cliente Redis (getCache/setCache/deleteCache)
+    │   ├── logger.js          # Winston logger
+    │   └── swagger.js         # Configuración Swagger (deshabilitado)
+    ├── models/
+    │   ├── index.js           # Asociaciones entre modelos
+    │   ├── user.js
+    │   ├── ParkingLot.js
+    │   ├── ParkingSpace.js
+    │   ├── PricingPlan.js
+    │   ├── Invoice.js
+    │   └── AuditLog.js
+    ├── routes/
+    │   ├── authRoutes.js
+    │   ├── parkingRoutes.js
+    │   ├── invoiceRoutes.js
+    │   ├── iotRoutes.js
+    │   └── healthRoutes.js
+    ├── controllers/
+    │   ├── auth/
+    │   │   ├── index.js
+    │   │   ├── login.controller.js
+    │   │   ├── register.controller.js
+    │   │   ├── token.controller.js
+    │   │   ├── profile.controller.js
+    │   │   └── google.controller.js
+    │   ├── parking/
+    │   │   ├── index.js
+    │   │   ├── assignment.controller.js   # assign, release, guard assign/release
+    │   │   ├── payment.controller.js      # payParking
+    │   │   ├── query.controller.js        # lots, status, active vehicles
+    │   │   ├── simulation.controller.js   # fill, empty (demo)
+    │   │   ├── admin.controller.js        # CRUD lotes, usuarios, revenue
+    │   │   └── solvency.controller.js     # ⚠️ Implementado pero NO enrutado
+    │   ├── iot/
+    │   │   └── lpr.controller.js          # Eventos de cámara LPR
+    │   ├── invoiceController.js
+    │   └── healthController.js
+    ├── middleware/
+    │   ├── authMiddleware.js      # protect (JWT)
+    │   ├── authorize.js           # authorize(...roles)
+    │   ├── roleMiddleware.js      # authorize (alias)
+    │   ├── rateLimitMiddleware.js # distributedRateLimit Redis
+    │   ├── solvencyMiddleware.js  # ⚠️ Implementado pero NO aplicado
+    │   ├── idempotencyMiddleware.js
+    │   ├── versionMiddleware.js
+    │   ├── errorHandler.js
+    │   ├── validationMiddleware.js
+    │   └── validators/
+    │       └── authValidators.js
+    ├── services/
+    │   ├── mqttService.js
+    │   └── socketService.js
+    └── utils/
+        ├── tokenUtils.js       # generateAccessToken, generateRefreshToken, etc.
+        ├── auditLogger.js
+        ├── pricingEngine.js    # calculateCost()
+        └── helpers.js
 ```
 
 ---
 
-## 🗄️ Base de Datos
+## 4. Variables de Entorno (.env)
 
-### Diagrama de Modelo de Datos
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                            USUARIOS                              │
-├────────┬──────────┬──────────────┬──────────┬──────────┬────────┤
-│ id (PK)│  name    │  email*      │ password │  role    │ cardId │
-├────────┼──────────┼──────────────┼──────────┼──────────┼────────┤
-│        │ VARCHAR  │ VARCHAR(100) │ HASHED   │ ENUM     │ VARCHAR│
-│ INT    │ 2-50chr  │ @miumg.edu.gt│ bcrypt   │ student  │ 4-20chr│
-└─────────────────────────────────────────────────────────────────┘
-           │
-           ├──────────────────────────┬────────────────────┐
-           │                          │                    │
-┌──────────▼─────────────────────┐  ┌─▼─────────────────┐ ┌──▼──────────────┐
-│   PARKING_LOTS (Lotes)         │  │ PARKING_SPACES    │ │ PRICING_PLANS    │
-├────┬──────┬─────────┬─────────┤  ├──┬──────┬────────┤ ├──┬──────┬────────┤
-│ id │ name │ location│ spaces  │  │id│ lot  │ user*  │ │id│ name │ price  │
-│    │      │ (JSON)  │ (avail) │  │  │ (FK) │ (FK)   │ │  │      │ monthly│
-└────┴──────┴─────────┴─────────┘  └──┴──────┴────────┘ └──┴──────┴────────┘
-                                          │
-                                          │
-                              ┌───────────▼──────────────┐
-                              │  INVOICES (Facturas)     │
-                              ├──┬──────┬─────┬─────────┤
-                              │id│ user │amt  │ date    │
-                              │  │ (FK) │     │         │
-                              └──┴──────┴─────┴─────────┘
-
-┌────────────────────────────────────────────────┐
-│        AUDIT_LOGS (Auditoría)                  │
-├──┬────┬──────┬──────┬────────┬──────┬─────────┤
-│id│user│role  │ ip   │ action │ res. │ details │
-│  │(FK)│      │      │        │status│ (JSON)  │
-└──┴────┴──────┴──────┴────────┴──────┴─────────┘
-```
-
-### Tabla: USERS (Usuarios)
-
-| Campo | Tipo | Restricciones | Descripción |
-|-------|------|---------------|-------------|
-| id | SERIAL PRIMARY KEY | Auto-incremento | Identificador único |
-| name | VARCHAR(50) | NOT NULL | Nombre del usuario |
-| email | VARCHAR(100) | UNIQUE, NOT NULL | Email @miumg.edu.gt |
-| password | VARCHAR(255) | NOT NULL | Hash bcrypt |
-| role | ENUM | student/admin/staff | Rol del usuario |
-| card_id | VARCHAR(20) | UNIQUE | Carné de identificación |
-| vehicle_plate | VARCHAR(10) | UNIQUE | Placa del vehículo (UMG-001) |
-| has_paid | BOOLEAN | DEFAULT false | Estado de pago |
-| nit | VARCHAR(20) | - | NIT para facturación |
-| fiscal_address | VARCHAR(255) | - | Dirección fiscal |
-| fiscal_name | VARCHAR(100) | - | Nombre fiscal |
-| current_parking_lot_id | INT FK | - | Lote actual |
-| current_parking_space | VARCHAR(10) | - | Espacio actual |
-| entry_time | TIMESTAMP | - | Hora de entrada |
-| last_payment_amount | DECIMAL(10,2) | - | Último pago |
-| refresh_token_version | INT | DEFAULT 0 | Versión del token |
-| created_at | TIMESTAMP | DEFAULT NOW() | Creación |
-| updated_at | TIMESTAMP | DEFAULT NOW() | Última actualización |
-
-### Tabla: PARKING_LOTS (Lotes de Estacionamiento)
-
-| Campo | Tipo | Restricciones | Descripción |
-|-------|------|---------------|-------------|
-| id | SERIAL PRIMARY KEY | - | Identificador |
-| name | VARCHAR(100) | NOT NULL | Nombre del lote |
-| location | JSON | - | Coordenadas GPS |
-| total_spaces | INT | NOT NULL | Espacios totales |
-| available_spaces | INT | NOT NULL | Espacios disponibles |
-| hourly_rate | DECIMAL(10,2) | - | Tarifa por hora |
-| created_at | TIMESTAMP | DEFAULT NOW() | Creación |
-| updated_at | TIMESTAMP | DEFAULT NOW() | Actualización |
-
-### Tabla: PARKING_SPACES (Espacios de Estacionamiento)
-
-| Campo | Tipo | Restricciones | Descripción |
-|-------|------|---------------|-------------|
-| id | SERIAL PRIMARY KEY | - | Identificador |
-| lot_id | INT FK | NOT NULL | Referencia a lote |
-| space_number | VARCHAR(10) | NOT NULL | Número/letra del espacio |
-| is_available | BOOLEAN | DEFAULT true | Disponibilidad |
-| occupied_by_user_id | INT FK | - | Usuario ocupante |
-| created_at | TIMESTAMP | DEFAULT NOW() | Creación |
-| updated_at | TIMESTAMP | DEFAULT NOW() | Actualización |
-
-### Tabla: PRICING_PLANS (Planes de Precios)
-
-| Campo | Tipo | Restricciones | Descripción |
-|-------|------|---------------|-------------|
-| id | SERIAL PRIMARY KEY | - | Identificador |
-| name | VARCHAR(100) | NOT NULL | Nombre del plan |
-| monthly_price | DECIMAL(10,2) | NOT NULL | Precio mensual |
-| created_at | TIMESTAMP | DEFAULT NOW() | Creación |
-| updated_at | TIMESTAMP | DEFAULT NOW() | Actualización |
-
-### Tabla: INVOICES (Facturas)
-
-| Campo | Tipo | Restricciones | Descripción |
-|-------|------|---------------|-------------|
-| id | SERIAL PRIMARY KEY | - | Identificador |
-| user_id | INT FK | NOT NULL | Usuario facturado |
-| amount | DECIMAL(10,2) | NOT NULL | Monto |
-| invoice_date | TIMESTAMP | DEFAULT NOW() | Fecha de factura |
-| created_at | TIMESTAMP | DEFAULT NOW() | Creación |
-| updated_at | TIMESTAMP | DEFAULT NOW() | Actualización |
-
-### Tabla: AUDIT_LOGS (Auditoría)
-
-| Campo | Tipo | Restricciones | Descripción |
-|-------|------|---------------|-------------|
-| id | SERIAL PRIMARY KEY | - | Identificador |
-| user_id | INT FK | - | Usuario que actúa |
-| user_role | VARCHAR(50) | - | Rol del usuario |
-| ip_address | VARCHAR(45) | - | IP origen |
-| user_agent | VARCHAR(255) | - | Navegador/Cliente |
-| action | VARCHAR(100) | NOT NULL | Acción realizada |
-| resource | VARCHAR(100) | NOT NULL | Recurso afectado |
-| status | ENUM | success/failure/warning | Estado |
-| details | JSON | - | Detalles adicionales |
-| timestamp | TIMESTAMP | DEFAULT NOW() | Fecha/hora |
+| Variable | Descripción | Ejemplo |
+|---|---|---|
+| `PORT` | Puerto del servidor | `3000` |
+| `NODE_ENV` | Entorno | `development` |
+| `DB_HOST` | Host PostgreSQL | `localhost` |
+| `DB_PORT` | Puerto PostgreSQL | `5432` |
+| `DB_NAME` | Nombre de la BD | `parking_db` |
+| `DB_USER` | Usuario BD | `postgres` |
+| `DB_PASSWORD` | Contraseña BD | `secret` |
+| `JWT_SECRET` | Secreto Access Token | `your_jwt_secret` |
+| `JWT_REFRESH_SECRET` | Secreto Refresh Token | `your_refresh_secret` |
+| `REDIS_URL` | URL de Redis | `redis://localhost:6379` |
+| `ALLOWED_ORIGINS` | CORS (separados por coma) | `http://localhost:3000` |
+| `PARKING_LOT_NAME` | Nombre lote principal (IoT) | `Parqueo Principal` |
+| `GOOGLE_CLIENT_ID` | Client ID para Google Auth | `xxx.apps.googleusercontent.com` |
+| `MQTT_BROKER_URL` | URL broker MQTT | `mqtt://localhost:1883` |
 
 ---
 
-## 🏗️ Arquitectura de API
+## 5. Roles de Usuario
 
-### Stack Tecnológico
+Los roles son **jerárquicos** y se controlan via el campo `role` en el modelo `User`.
 
+| Rol | Constante | Descripción |
+|---|---|---|
+| `admin` | `USER_ROLES.ADMIN` | Acceso total al sistema |
+| `guard` | `USER_ROLES.GUARD` | Operador de garita — asignar/liberar, ver vehículos activos |
+| `faculty` | `USER_ROLES.FACULTY` | Personal docente/administrativo |
+| `student` | `USER_ROLES.STUDENT` | Estudiantes activos (rol por defecto) |
+| `visitor` | `USER_ROLES.VISITOR` | Visitantes externos |
+
+> Los roles `admin` y `guard` tienen acceso a las rutas administrativas y de garita.
+
+---
+
+## 6. Autenticación (JWT + Refresh Tokens)
+
+### Flujo de Tokens
+1. **Login/Register** → devuelve `accessToken` (15 min) + `refreshToken` (7 días).
+2. El **accessToken** se incluye en el header `Authorization: Bearer <token>` en cada request protegido.
+3. Cuando el accessToken expira, se llama a `POST /api/auth/refresh` con el `refreshToken`.
+4. El sistema genera **nuevos tokens** y revoca el anterior (rotación).
+
+### Header requerido en rutas protegidas
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   CLIENT LAYER                          │
-│              (Swagger UI / Frontend App)                │
-└──────────────────────┬──────────────────────────────────┘
-                       │ HTTP/HTTPS
-┌──────────────────────▼──────────────────────────────────┐
-│                  PRESENTATION LAYER                     │
-│         (Express Router + Swagger Documentation)        │
-│  GET/POST/PUT/DELETE /api/auth, /api/parking, etc.    │
-└──────────────────────┬──────────────────────────────────┘
-                       │ Routes
-┌──────────────────────▼──────────────────────────────────┐
-│                  MIDDLEWARE LAYER                       │
-│  • Auth Middleware (JWT Verification)                  │
-│  • Authorization (Role-based Access Control)           │
-│  • Validation (express-validator)                      │
-│  • Error Handling (Centralized)                        │
-│  • Rate Limiting                                       │
-│  • CORS + Security Headers                            │
-└──────────────────────┬──────────────────────────────────┘
-                       │ Controllers
-┌──────────────────────▼──────────────────────────────────┐
-│                  BUSINESS LOGIC LAYER                   │
-│  • Auth Controller (Register, Login, Refresh)          │
-│  • Parking Controller (Assign, Pay, Release)           │
-│  • Invoice Controller (Generate, List)                 │
-│  • IoT Controller (Handle sensor data)                 │
-└──────────────────────┬──────────────────────────────────┘
-                       │ Services
-┌──────────────────────▼──────────────────────────────────┐
-│                  SERVICE LAYER                         │
-│  • MQTT Service (IoT integration)                      │
-│  • Socket.io Service (Real-time updates)              │
-│  • Pricing Engine (Tariff calculation)                │
-│  • Audit Logger (Activity tracking)                   │
-└──────────────────────┬──────────────────────────────────┘
-                       │ Models
-┌──────────────────────▼──────────────────────────────────┐
-│                   DATA LAYER                            │
-│  • Sequelize ORM (Models & Relationships)              │
-│  • PostgreSQL Database (parking_db)                    │
-│  • Redis Cache (Session & Token storage)              │
-└──────────────────────┴──────────────────────────────────┘
-```
-
-### Flujo de Solicitud
-
-```
-1. Cliente envía: POST /api/auth/register
-                   {
-                     "name": "Carmen Lopez",
-                     "email": "carmen.lopez@miumg.edu.gt",
-                     "password": "SecurePass123",
-                     "card_id": "87654321",
-                     "vehicle_plate": "UMG-001"
-                   }
-
-2. Express Router → authRoutes.js (POST /register)
-
-3. Middleware Chain:
-   a) CORS Check ✓
-   b) Body Parser (JSON) ✓
-   c) Field Normalization (card_id → cardId) ✓
-   d) Express-validator validates:
-      - name: 2-50 caracteres ✓
-      - email: Debe contener @miumg.edu.gt ✓
-      - password: Min 8, mayúscula, minúscula, número ✓
-      - cardId: 4-20 caracteres ✓
-      - vehiclePlate: 4-10 caracteres (permite guiones) ✓
-
-4. Controller: authController.registerUser()
-   a) Normaliza campo names
-   b) Extrae datos del request
-   c) Verifica email único en BD
-   d) Hash password con bcrypt
-   e) Crea usuario en User model
-   f) Genera JWT token
-   g) Retorna 201 Created + token
-
-5. Respuesta:
-   {
-     "success": true,
-     "_id": 2,
-     "name": "Carmen Lopez",
-     "email": "carmen.lopez@miumg.edu.gt",
-     "role": "student",
-     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-   }
-
-6. Base de Datos: Usuario insertado en tabla users
-   id=2, name='Carmen Lopez', email='carmen.lopez@miumg.edu.gt', password=(hash)
-
-7. Audit Log: Registro de auditoría creado en audit_logs
-   action='user_registration', status='success'
+Authorization: Bearer <accessToken>
 ```
 
 ---
 
-## 🔐 Autenticación y Seguridad
+## 7. Endpoints — Referencia Completa
 
-### Estrategia de Autenticación: JWT (JSON Web Tokens)
+### 7.1 Auth — `/api/auth`
 
-#### 1. Registro (POST /api/auth/register)
+#### `POST /api/auth/register`
+Registra un nuevo usuario.
 
-```javascript
-// Cliente envía
+**Body:**
+```json
 {
   "name": "Carmen Lopez",
-  "email": "carmen.lopez@miumg.edu.gt",
-  "password": "SecurePass123",
-  "card_id": "87654321",
-  "vehicle_plate": "UMG-001"
+  "email": "clopez@miumg.edu.gt",
+  "password": "Password1",
+  "cardId": "9999-2024",
+  "vehiclePlate": "ABC1234",
+  "role": "student"
 }
+```
+> `role` es opcional — por defecto `student`.
 
-// Servidor responde (201 Created)
+**Respuesta 201:**
+```json
 {
-  "success": true,
-  "_id": 2,
+  "_id": 1,
   "name": "Carmen Lopez",
-  "email": "carmen.lopez@miumg.edu.gt",
+  "email": "clopez@miumg.edu.gt",
   "role": "student",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsIm5hbWUiOiJDYXJtZW4gTG9wZXoiLCJlbWFpbCI6ImNhcm1lbi5sb3BlekBtaXVtZy5lZHUuZ3QiLCJyb2xlIjoic3R1ZGVudCIsImlhdCI6MTcwODUxMjM0MCwiZXhwIjoxNzA4NTk4NzQwfQ.xyz..."
+  "token": "<accessToken>"
 }
 ```
 
-#### 2. Decodificación del Token
+---
 
+#### `POST /api/auth/login`
+Inicia sesión. **Rate limit:** 5 intentos / 15 min.
+
+**Body:**
+```json
+{ "email": "clopez@miumg.edu.gt", "password": "Password1" }
 ```
-JWT Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.{payload}.{signature}
 
-HEADER:
+**Respuesta 200:**
+```json
 {
-  "alg": "HS256",
-  "typ": "JWT"
-}
-
-PAYLOAD:
-{
-  "userId": 2,
+  "_id": 1,
   "name": "Carmen Lopez",
-  "email": "carmen.lopez@miumg.edu.gt",
+  "email": "clopez@miumg.edu.gt",
   "role": "student",
-  "iat": 1708512340,
-  "exp": 1708598740
-}
-
-SIGNATURE: HMAC(SHA256, secret)
-```
-
-#### 3. Flujo de Login (POST /api/auth/login)
-
-```javascript
-1. Cliente envía credenciales
-   {
-     "email": "carmen.lopez@miumg.edu.gt",
-     "password": "SecurePass123"
-   }
-
-2. Servidor:
-   a) Busca usuario por email
-   b) Compara password con bcrypt.compare()
-   c) Si correcto, genera nuevo JWT
-   d) Retorna token y datos usuario
-
-3. Respuesta (200 OK)
-   {
-     "success": true,
-     "token": "eyJhbGciOi...",
-     "user": {
-       "_id": 2,
-       "name": "Carmen Lopez",
-       "email": "carmen.lopez@miumg.edu.gt",
-       "role": "student"
-     }
-   }
-```
-
-#### 4. Autorización (Bearer Token)
-
-```
-Toda solicitud protegida requiere:
-
-Header: Authorization: Bearer {token}
-
-Ej: Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-authMiddleware.js valida:
-1. Verifica presencia del header
-2. Extrae token de "Bearer {token}"
-3. Decodifica y valida firma
-4. Verifica expiración
-5. Adjunta usuario al request (req.user)
-6. Permite o deniega paso
-```
-
-#### 5. Refresh Token (POST /api/auth/refresh)
-
-```javascript
-// Cuando token expira después de 24 horas
-{
-  "refreshToken": "token_de_refresco"
-}
-
-// Servidor:
-// 1. Valida refresh token
-// 2. Incrementa refresh_token_version en BD
-// 3. Genera nuevo access token
-// 4. Retorna nuevo token
-
-{
-  "success": true,
-  "token": "nuevo_jwt_token_aqui..."
-}
-```
-
-### Seguridad Implementada
-
-| Medida | Implementación | Estado |
-|--------|-----------------|--------|
-| **Hashing de Passwords** | bcrypt (12 rounds) | ✅ Activo |
-| **JWT Signatures** | HMAC-SHA256 con secret | ✅ Activo |
-| **Token Expiration** | 24 horas (configurable) | ✅ Activo |
-| **HTTPS Only** | No (dev), Sí (prod) | ⏳ A implementar |
-| **CORS** | Configurado en app.js | ✅ Activo |
-| **Rate Limiting** | Middleware implementado | ⏳ Activar |
-| **SQL Injection Prevention** | Sequelize ORM + Parameterized queries | ✅ Activo |
-| **XSS Prevention** | express-validator sanitize | ✅ Activo |
-| **CSP Headers** | A implementar | ⏳ Pendiente |
-| **Field Normalization** | Convierte snake_case a camelCase | ✅ Activo |
-
----
-
-## ✅ Validaciones Implementadas
-
-### Validación de Registro (authValidators.js)
-
-```javascript
-// NOMBRE
-{
-  field: "name",
-  rules: [
-    isLength({ min: 2, max: 50 }),
-    trim(),
-    escape()
-  ],
-  error: "El nombre debe tener entre 2 y 50 caracteres"
-}
-
-// EMAIL
-{
-  field: "email",
-  rules: [
-    isEmail(),
-    matches(/@miumg\.edu\.gt$/),
-    trim(),
-    toLowerCase()
-  ],
-  error: "Email debe ser válido y terminar en @miumg.edu.gt"
-}
-
-// PASSWORD
-{
-  field: "password",
-  rules: [
-    isLength({ min: 8 }),
-    matches(/[A-Z]/),  // mayúscula
-    matches(/[a-z]/),  // minúscula
-    matches(/[0-9]/)   // dígito
-  ],
-  error: "Contraseña: min 8 chars, mayúscula, minúscula, número"
-}
-
-// CARD ID
-{
-  field: "card_id",
-  rules: [
-    isLength({ min: 4, max: 20 }),
-    isAlphanumeric()
-  ],
-  error: "Carné: 4-20 caracteres alfanuméricos"
-}
-
-// VEHICLE PLATE
-{
-  field: "vehicle_plate",
-  rules: [
-    matches(/^[A-Z0-9\-]{4,10}$/i)
-  ],
-  error: "Placa: 4-10 caracteres (permite guiones). Ej: UMG-001"
-}
-```
-
-### Field Normalization
-
-```javascript
-// Middleware normaliza automáticamente:
-card_id → cardId
-vehicle_plate → vehiclePlate
-
-Esto permite que cliente (Swagger) envíe snake_case
-pero el código interno usa camelCase
-```
-
-### Validaciones de Negocio
-
-| Campo | Regla | Mensaje |
-|-------|-------|---------|
-| Email | Único en BD + @miumg.edu.gt | "Email duplicado o dominio inválido" |
-| Card ID | Único en BD | "Carné ya registrado" |
-| Vehicle Plate | Único en BD | "Placa ya registrada" |
-| Password | Min 8, mayús, minús, número | "Contraseña insegura" |
-| Entry Time | No puede ser futuro | "Hora no puede ser en el futuro" |
-
----
-
-## 🌐 Endpoints de API
-
-### 🔑 Autenticación (/api/auth)
-
-#### **POST /api/auth/register**
-Registra nuevo usuario con validación completa
-
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Carmen Lopez",
-    "email": "carmen.lopez@miumg.edu.gt",
-    "password": "SecurePass123",
-    "card_id": "87654321",
-    "vehicle_plate": "UMG-001"
-  }'
-```
-
-**Parámetros:**
-- `name` (string, 2-50 chars): Nombre completo
-- `email` (string, formato email): Debe terminar en @miumg.edu.gt
-- `password` (string, ≥8 chars): Min mayúscula, minúscula, número
-- `card_id` (string, 4-20 chars): Carné único
-- `vehicle_plate` (string, 4-10 chars): Placa del vehículo
-
-**Respuesta Exitosa (201 Created):**
-```json
-{
-  "success": true,
-  "_id": 2,
-  "name": "Carmen Lopez",
-  "email": "carmen.lopez@miumg.edu.gt",
-  "role": "student",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-**Respuestas de Error:**
-```json
-// 400 - Validación
-{
-  "errors": [
-    {
-      "msg": "Email debe terminar en @miumg.edu.gt",
-      "param": "email"
-    }
-  ]
-}
-
-// 400 - Email duplicado
-{
-  "message": "El email ya está registrado"
+  "hasPaid": false,
+  "currentParkingSpace": null,
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ..."
 }
 ```
 
 ---
 
-#### **POST /api/auth/login**
-Autenticación con email y contraseña
+#### `POST /api/auth/refresh`
+Renueva el access token usando el refresh token.
 
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "carmen.lopez@miumg.edu.gt",
-    "password": "SecurePass123"
-  }'
+**Body:**
+```json
+{ "refreshToken": "eyJ..." }
 ```
 
-**Respuesta Exitosa (200 OK):**
+**Respuesta 200:**
+```json
+{ "accessToken": "eyJ...", "refreshToken": "eyJ..." }
+```
+
+---
+
+#### `POST /api/auth/logout`
+Cierra sesión (revoca el refresh token).
+
+**Body:**
+```json
+{ "refreshToken": "eyJ..." }
+```
+
+**Respuesta 200:**
+```json
+{ "message": "Sesión cerrada exitosamente" }
+```
+
+---
+
+#### `GET /api/auth/me` 🔒
+Devuelve el perfil del usuario autenticado. Usa caché Redis (60 s).
+
+**Respuesta 200:**
 ```json
 {
-  "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "_id": 2,
-    "name": "Carmen Lopez",
-    "email": "carmen.lopez@miumg.edu.gt",
-    "role": "student"
-  }
+  "_id": 1, "name": "...", "email": "...", "role": "student",
+  "cardId": "...", "vehiclePlate": "...",
+  "currentParkingSpace": null, "currentParkingLotId": null,
+  "hasPaid": false, "entryTime": null
 }
 ```
 
 ---
 
-#### **GET /api/auth/me**
-Obtener datos del usuario autenticado
+#### `POST /api/auth/google`
+Login con cuenta Google — **Solo acepta** cuentas `@miumg.edu.gt`.
 
-```bash
-curl -X GET http://localhost:3000/api/auth/me \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+**Body:**
+```json
+{ "idToken": "<Google ID Token>" }
 ```
 
-**Respuesta Exitosa (200 OK):**
+---
+
+#### `POST /api/auth/switch-role` 🔒
+Cambia el rol del usuario autenticado (usado en testing/demo).
+
+**Body:**
+```json
+{ "role": "admin" }
+```
+> Roles válidos: `admin`, `guard`, `student`, `faculty`, `visitor`.
+
+**Respuesta 200:**
 ```json
 {
   "success": true,
-  "user": {
-    "_id": 2,
-    "name": "Carmen Lopez",
-    "email": "carmen.lopez@miumg.edu.gt",
-    "role": "student",
-    "cardId": "87654321",
-    "vehiclePlate": "UMG-001",
-    "hasPaid": false
-  }
+  "message": "Rol cambiado a admin",
+  "user": { ... },
+  "accessToken": "eyJ...",
+  "refreshToken": "eyJ..."
 }
 ```
 
 ---
 
-#### **POST /api/auth/refresh**
-Renovar token JWT expirado
+### 7.2 Parking — `/api/parking`
 
-```bash
-curl -X POST http://localhost:3000/api/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refreshToken": "token_de_refresco"
-  }'
-```
-
-**Respuesta Exitosa (200 OK):**
-```json
-{
-  "success": true,
-  "token": "nuevo_jwt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
+Todas las rutas de parqueo requieren autenticación (`Authorization: Bearer <token>`).
 
 ---
 
-#### **POST /api/auth/logout**
-Cerrar sesión (invalida refresh tokens)
+#### `GET /api/parking/lots` 🔒
+Lista todos los lotes de parqueo con estado de cada espacio.
 
-```bash
-curl -X POST http://localhost:3000/api/auth/logout \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-```
-
-**Respuesta Exitosa (200 OK):**
+**Respuesta 200:**
 ```json
 {
-  "success": true,
-  "message": "Sesión cerrada correctamente"
-}
-```
-
----
-
-### 🅿️ Estacionamiento (/api/parking)
-
-#### **GET /api/parking/lots**
-Listar todos los lotes disponibles
-
-```bash
-curl -X GET http://localhost:3000/api/parking/lots
-```
-
-**Respuesta Exitosa (200 OK):**
-```json
-{
-  "success": true,
-  "lots": [
-    {
-      "id": 1,
-      "name": "Lote Principal",
-      "location": { "lat": 14.6349, "lng": -90.5069 },
-      "totalSpaces": 100,
-      "availableSpaces": 45,
-      "hourlyRate": 2.50
-    }
-  ]
-}
-```
-
----
-
-#### **POST /api/parking/assign**
-Asignar espacio de estacionamiento al usuario
-
-```bash
-curl -X POST http://localhost:3000/api/parking/assign \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parkingLotId": 1
-  }'
-```
-
-**Respuesta Exitosa (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Espacio asignado correctamente",
-  "assignment": {
-    "parkingSpaceId": "A-15",
-    "parkingLotId": 1,
-    "spaceNumber": "A-15",
-    "entryTime": "2026-02-21T10:30:00.000Z"
-  }
-}
-```
-
----
-
-#### **POST /api/parking/release**
-Liberar el espacio de estacionamiento
-
-```bash
-curl -X POST http://localhost:3000/api/parking/release \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parkingLotId": 1
-  }'
-```
-
-**Respuesta Exitosa (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Espacio liberado",
-  "exitTime": "2026-02-21T11:45:00.000Z",
-  "durationMinutes": 75,
-  "dueAmount": 3.13
-}
-```
-
----
-
-#### **POST /api/parking/pay**
-Realizar pago de estacionamiento
-
-```bash
-curl -X POST http://localhost:3000/api/parking/pay \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": 3.13,
-    "paymentMethod": "card"
-  }'
-```
-
-**Respuesta Exitosa (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Pago procesado correctamente",
-  "invoice": {
+  "message": "Parqueos disponibles",
+  "data": [{
     "id": 1,
-    "userId": 2,
-    "amount": 3.13,
-    "date": "2026-02-21T11:45:00.000Z",
-    "status": "paid"
-  }
+    "name": "Parqueo Principal",
+    "location": { "type": "Point", "coordinates": [-90.5, 14.6] },
+    "totalSpaces": 20,
+    "occupiedSpaces": 3,
+    "availableSpaces": 17,
+    "spaces": [
+      { "id": 1, "spaceNumber": 1, "isOccupied": false, "occupiedBy": null, "entryTime": null }
+    ]
+  }]
 }
 ```
 
 ---
 
-### 📄 Facturas (/api/invoices)
+#### `POST /api/parking/assign` 🔒
+Asigna un espacio libre al usuario (ENTRADA al parqueo).
 
-#### **GET /api/invoices**
-Listar todas las facturas del usuario autenticado
-
-```bash
-curl -X GET http://localhost:3000/api/invoices \
-  -H "Authorization: Bearer {token}"
+**Body:**
+```json
+{ "parkingLotId": 1 }
 ```
 
-**Respuesta Exitosa (200 OK):**
+**Respuesta 200:**
 ```json
 {
-  "success": true,
-  "invoices": [
-    {
-      "id": 1,
-      "userId": 2,
-      "amount": 3.13,
-      "date": "2026-02-21T11:45:00.000Z"
-    }
+  "message": "Espacio asignado con éxito",
+  "parkingLot": "Parqueo Principal",
+  "space": 5,
+  "entryTime": "2026-02-24T18:00:00.000Z",
+  "info": "Tarifa al salir."
+}
+```
+
+---
+
+#### `POST /api/parking/pay` 🔒
+Paga la tarifa de parqueo en base al tiempo transcurrido desde la entrada.  
+**Rate limit:** 3 intentos / 60 s.
+
+> Tarifa base: **Q2.50/hora** (configurable en `constants.js`).  
+> Requiere que el usuario tenga un espacio asignado y que **no haya pagado ya**.
+
+**Respuesta 200:**
+```json
+{
+  "message": "Pago realizado con éxito",
+  "amount": 5.00,
+  "space": 5,
+  "details": { "totalAmount": 5.00, "hoursParked": 2, ... }
+}
+```
+
+---
+
+#### `POST /api/parking/release` 🔒
+Libera el espacio (SALIDA del parqueo). También abre la barrera via MQTT.
+
+> ⚠️ **Nota:** La validación de pago previo (`hasPaid`) está **comentada** en el código (`releaseSpace`). Actualmente se puede salir sin pagar.
+
+**Respuesta 200:**
+```json
+{ "message": "¡Salida exitosa! Espacio 5 liberado." }
+```
+
+---
+
+#### `GET /api/parking/status` 🔒
+Estado de ocupación de un lote. Usa caché Redis (5 s).  
+**Acceso:** `admin`, `guard`, `faculty`
+
+**Query params:** `?parkingLotId=1`
+
+**Respuesta 200:**
+```json
+{
+  "parkingLotId": 1,
+  "parkingLotName": "Parqueo Principal",
+  "totalSpaces": 20,
+  "occupiedSpaces": 3,
+  "availableSpaces": 17,
+  "occupiedDetails": [
+    { "spaceNumber": 5, "occupiedBy": { "name": "Carmen", "email": "...", "vehiclePlate": "ABC1234" }, "entryTime": "..." }
   ]
 }
 ```
 
 ---
 
-#### **GET /api/invoices/:id**
-Obtener una factura específica
+#### `POST /api/parking/gate/open` 🔒
+Abre la barrera del parqueo via MQTT.  
+**Acceso:** `admin`, `guard`, `faculty`, `student`  
+**Rate limit:** 5 aperturas / 60 s
 
-```bash
-curl -X GET http://localhost:3000/api/invoices/1 \
-  -H "Authorization: Bearer {token}"
-```
+---
 
-**Respuesta Exitosa (200 OK):**
+#### `POST /api/parking/simulate/fill` 🔒
+Simula llenar el parqueo (para demos/testing).
+
+#### `POST /api/parking/simulate/empty` 🔒
+Simula vaciar el parqueo (para demos/testing).
+
+---
+
+#### `GET /api/parking/guard/active-vehicles` 🔒
+Lista todos los vehículos actualmente en el parqueo con tiempo transcurrido y costo estimado.  
+**Acceso:** `guard`, `admin`
+
+**Respuesta 200:**
 ```json
 {
-  "success": true,
-  "invoice": {
-    "id": 1,
+  "message": "Vehículos activos",
+  "data": [{
     "userId": 2,
-    "amount": 3.13,
-    "date": "2026-02-21T11:45:00.000Z",
-    "description": "Estacionamiento - 75 minutos"
-  }
+    "name": "Juan Pérez",
+    "email": "jperez@miumg.edu.gt",
+    "vehiclePlate": "XYZ9876",
+    "parkingLotId": 1,
+    "parkingLotName": "Parqueo Principal",
+    "space": 3,
+    "entryTime": "2026-02-24T15:00:00.000Z",
+    "durationMinutes": 75,
+    "cost": 3.13
+  }]
 }
 ```
 
 ---
 
-### 🏥 Health Check (/api/health)
+#### `POST /api/parking/guard/assign` 🔒
+El oficial asigna un espacio a un usuario buscado por **placa** o **email**.  
+**Acceso:** `guard`, `admin`
 
-#### **GET /api/health**
-Verificar estado del servidor y servicios
-
-```bash
-curl -X GET http://localhost:3000/api/health
-```
-
-**Respuesta Exitosa (200 OK):**
+**Body:**
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2026-02-21T10:30:00.000Z",
-  "services": {
-    "database": "connected",
-    "redis": "connected",
-    "api": "running"
-  }
+  "parkingLotId": 1,
+  "vehiclePlate": "XYZ9876"
+}
+```
+> También se puede usar `"email": "..."` en lugar de `vehiclePlate`.
+
+---
+
+#### `POST /api/parking/guard/release` 🔒
+El oficial libera forzosamente el espacio de cualquier usuario.  
+**Acceso:** `guard`, `admin`
+
+**Body:**
+```json
+{ "userId": 2 }
+```
+
+---
+
+#### `POST /api/parking/admin/lots` 🔒
+Crea un nuevo lote de parqueo y genera sus espacios individuales automáticamente.  
+**Acceso:** `admin`
+
+**Body:**
+```json
+{
+  "name": "Parqueo Norte",
+  "latitude": 14.6407,
+  "longitude": -90.5133,
+  "totalSpaces": 30
 }
 ```
 
 ---
 
-### 📡 IoT (/api/iot)
+#### `PATCH /api/parking/admin/lots/:id` 🔒
+Actualiza nombre, coordenadas o capacidad de un lote. Si se reduce capacidad, verifica que los espacios a eliminar no estén ocupados.  
+**Acceso:** `admin`
 
-#### **POST /api/iot/sensor-event**
-Registrar evento de sensor IoT (MQTT)
-
-```bash
-curl -X POST http://localhost:3000/api/iot/sensor-event \
-  -H "Content-Type: application/json" \
-  -d '{
-    "sensorId": "lot-1-sensor-1",
-    "parkingLotId": 1,
-    "spaceNumber": "A-15",
-    "status": "occupied"
-  }'
+**Body (todos opcionales):**
+```json
+{ "name": "Nuevo Nombre", "latitude": 14.64, "longitude": -90.51, "totalSpaces": 25 }
 ```
 
-**Respuesta Exitosa (200 OK):**
+---
+
+#### `DELETE /api/parking/admin/lots/:id` 🔒
+Elimina un lote de parqueo (solo si no tiene espacios ocupados).  
+**Acceso:** `admin`
+
+---
+
+#### `GET /api/parking/admin/users` 🔒
+Lista todos los usuarios registrados.  
+**Acceso:** `admin`
+
+**Respuesta 200:**
 ```json
 {
   "success": true,
-  "message": "Evento procesado"
+  "data": [{ "id": 1, "name": "...", "email": "...", "role": "student", "vehiclePlate": "...", "createdAt": "..." }]
 }
 ```
 
 ---
 
-## 🧪 Testing
+#### `PATCH /api/parking/admin/users/:id/role` 🔒
+Cambia el rol de cualquier usuario.  
+**Acceso:** `admin`
 
-### Ejecución de Tests
-
-```bash
-# Ejecutar todos los tests
-npm test
-
-# Ejecutar tests de autenticación específicamente
-npm test -- auth.test.js
-
-# Con cobertura
-npm test -- --coverage
+**Body:**
+```json
+{ "role": "guard" }
 ```
 
-### Archivos de Test Creados
+---
 
-1. **[__tests__/auth.test.js](__tests__/auth.test.js)**
-   - Tests de registro de usuario
-   - Tests de login
-   - Validación de contraseñas
-   - Validación de emails
+#### `GET /api/parking/admin/stats/revenue` 🔒
+Estadísticas de ingresos estimados (basado en vehículos activos).  
+**Acceso:** `admin`
 
-2. **test-register.js** (Test local sin HTTP)
-   - Prueba directa de creación de usuario
-   - Verifica: Normalization, hashing, almacenamiento
-
-3. **test-register-correct.js** (Test HTTP endpoint)
-   - Simula cliente HTTP (como Swagger)
-   - Prueba endpoint /api/auth/register
-   - Valida respuesta y token JWT
-   - Verifica persistencia en BD
-
-### Testing Manual en Swagger
-
-```
-1. Acceder a: http://localhost:3000/api-docs
-2. Expandir sección "Authentication"
-3. Click en "Try it out" para POST /api/auth/register
-4. Ingresar JSON:
-
+**Respuesta 200:**
+```json
 {
-  "name": "Nuevo Usuario",
-  "email": "usuario@miumg.edu.gt",
-  "password": "SecurePass123",
-  "card_id": "11223344",
-  "vehicle_plate": "UMG-002"
+  "success": true,
+  "summary": {
+    "activeUsers": 5,
+    "estimatedHourlyRevenue": 12.50,
+    "simulatedDailyRevenue": "100.00"
+  }
 }
-
-5. Click "Execute"
-6. Verificar Status 201 y token en response
-7. Copiar token
-8. Click "Authorize" en header Swagger
-9. Pegar token: "Bearer {token}"
-10. Probar endpoints protegidos (/me, /parking/etc)
-```
-
-### Cobertura de Tests Actual
-
-```
-Statements   : 45.23% ( 1250/2766 )
-Branches     : 38.17% ( 389/1019 )
-Functions    : 42.89% ( 156/364 )
-Lines        : 46.12% ( 1089/2360 )
-```
-
-### Tests Pendientes
-
-- [ ] Test de login con credenciales incorrectas
-- [ ] Test de refresh token expirado
-- [ ] Test de asignación de espacios
-- [ ] Test de pagos
-- [ ] Test de auditoría
-- [ ] Test de MQTT/IoT
-- [ ] Test de rate limiting
-
----
-
-## 📋 Próximos Pasos
-
-### FASE 1: Validación de Endpoints (EN CURSO)
-
-#### Semana 1 - Testing de Autenticación
-- [ ] **Login**: Probar cliente HTTP vs Swagger
-- [ ] **Refresh Token**: Verificar renovación de token
-- [ ] **Logout**: Verificar invalidación de tokens
-- [ ] **Me Endpoint**: Obtener perfil de usuario
-
-#### Semana 2 - Testing de Estacionamiento
-- [ ] **Assign Space**: Asignar espacio automáticamente
-- [ ] **Release Space**: Liberar espacio y calcular costo
-- [ ] **Pay**: Procesar pagos correctamente
-- [ ] **List Lots**: Listar lotes disponibles
-
-#### Semana 3 - Testing de Facturas e Invoices
-- [ ] **Generate Invoice**: Crear factura después de pago
-- [ ] **List Invoices**: Listar facturas de usuario
-- [ ] **Get Invoice**: Obtener factura específica
-
-### FASE 2: Carga de Datos de Prueba
-
-```bash
-# Ejecutar seeders
-node seeders/seedUsers.js        # Crear usuarios de prueba
-node seeders/seedParkingLots.js  # Crear lotes
-node seeders/seedPricingPlans.js # Crear planes de precios
-
-# Crear estacionamientos iniciales (100 espacios x lote)
-node scripts/initParkingPlans.js
-```
-
-### FASE 3: Integración IoT
-
-- [ ] Configurar broker MQTT (Mosquitto o similar)
-- [ ] Implementar publicación de eventos desde sensores
-- [ ] Suscribir a eventos MQTT en mqttService.js
-- [ ] Actualizar disponibilidad en tiempo real
-
-### FASE 4: Frontend/Cliente
-
-- [ ] Crear interface web (React/Vue/Angular)
-- [ ] Implementar formulario de registro
-- [ ] Dashboard de usuario (espacios, pagos, facturas)
-- [ ] Panel administrativo
-
-### FASE 5: Deployment
-
-- [ ] Containerizar con Docker
-- [ ] Setup de CI/CD (GitHub Actions)
-- [ ] Deployment a Azure / AWS / GCP
-- [ ] Configurar SSL/TLS
-- [ ] Setup de bases de datos en producción
-
-### FASE 6: Monitoreo y Optimización
-
-- [ ] Configurar logging centralizado
-- [ ] Setup de alertas
-- [ ] Monitoreo de performance
-- [ ] Optimización de queries
-- [ ] Caching avanzado con Redis
-
----
-
-## 📚 Guías Adicionales
-
-### Comandos Útiles
-
-```bash
-# Iniciar servidor en modo desarrollo
-npm start
-
-# Iniciar con nodemon (auto-reload)
-npm run dev
-
-# Ejecutar tests
-npm test
-
-# Ver cobertura
-npm test -- --coverage
-
-# Conectar a PostgreSQL
-psql -U postgres -h localhost -d parking_db
-
-# Ver logs de servidor
-tail -f logs/*.log
-
-# Detener servidor
-Ctrl + C
-```
-
-### Archivos de Configuración Importantes
-
-| Archivo | Propósito |
-|---------|-----------|
-| `.env` | Variables de entorno (secretos, credenciales) |
-| `src/config/database.js` | Conexión a PostgreSQL |
-| `src/config/swagger.js` | Documentación OpenAPI |
-| `src/app.js` | Setup de Express y middleware |
-| `server.js` | Punto de entrada |
-| `package.json` | Dependencias y scripts |
-
-### Solución de Problemas Comunes
-
-#### Problema: "Cannot connect to database"
-```bash
-# Verificar que PostgreSQL está corriendo
-netstat -ano | Select-String "5432"
-
-# Reiniciar PostgreSQL
-net stop PostgreSQL18
-net start PostgreSQL18
-
-# Verificar credenciales en .env
-```
-
-#### Problema: "JWT signature invalid"
-```bash
-# Verificar que JWT_SECRET es el mismo en .env y código
-# El problema generalmente es cambio de secret entre inicios
-```
-
-#### Problema: "Email already exists"
-```bash
-# Insertar usuario de prueba sin duplicados
-node -e "console.log(Math.random().toString(36).substring(7))"
-
-# Usar email único con timestamp:
-test_${Date.now()}@miumg.edu.gt
-```
-
-#### Problema: "Swagger no muestra documentación"
-```bash
-# Verificar que swagger está ANTES del 404 handler en app.js
-# Revisar que swagger.js define correctamente los endpoints
-# Acceder a http://localhost:3000/api-docs (no /swagger)
 ```
 
 ---
 
-## 📞 Contacto y Soporte
+### 7.2.x Solvencia — `/api/parking/solvency`
 
-- **Documentación API**: http://localhost:3000/api-docs (Swagger UI)
-- **Logs del Servidor**: `/api/logs/*.log`
-- **Database Manager**: pgAdmin en localhost:5050
-- **Git Repository**: Ver CONTRIBUTING.md para contributing guidelines
+Estas rutas controlan el pago mensual de parqueo (solvencia) de los estudiantes.
 
 ---
 
-## 📄 Licencia y Términos
+#### `PUT /api/parking/solvency/:userId` 🔒
+Marca a un usuario como solvente por N meses. Si ya tiene solvencia vigente, la **extiende** desde la fecha de vencimiento actual.  
+**Acceso:** `admin`, `guard`
 
-Este proyecto es parte de la Tesis de Grado - Sistema de Gestión de Estacionamiento de la Universidad.
+**URL param:** `:userId` — ID del usuario a marcar como solvente.
 
-**Última Actualización:** 21 de febrero de 2026  
-**Versión Documentación:** 1.0.0  
-**Estado:** ✅ En Desarrollo
+**Body:**
+```json
+{ "months": 1 }
+```
+> `months` es opcional — por defecto `1`. Rango válido: 1-12.
+
+**Respuesta 200:**
+```json
+{
+  "success": true,
+  "message": "Solvencia actualizada correctamente por 1 mes(es)",
+  "user": {
+    "id": 2,
+    "name": "Juan Pérez",
+    "email": "jperez@miumg.edu.gt",
+    "cardId": "9999-2024",
+    "isSolvent": true,
+    "solvencyExpires": "2026-03-24T18:00:00.000Z"
+  }
+}
+```
 
 ---
 
-**Fin de la Documentación Técnica**
+#### `GET /api/parking/solvency/:cardId` 🔒
+Consulta el estado de solvencia de un usuario por su **carné universitario**.  
+**Acceso:** `admin`, `guard`, `student`, `faculty`
+
+**URL param:** `:cardId` — Carné universitario del alumno.
+
+**Respuesta 200:**
+```json
+{
+  "success": true,
+  "user": { "id": 2, "name": "Juan", "email": "...", "role": "student", "cardId": "9999-2024", "vehiclePlate": "XYZ9876", "currentParkingSpace": null },
+  "solvency": {
+    "isSolvent": true,
+    "isExemptRole": false,
+    "solvencyExpires": "2026-03-24T18:00:00.000Z",
+    "daysRemaining": 28,
+    "status": "VIGENTE (28 días restantes)"
+  }
+}
+```
+> Roles exentos (`admin`, `guard`, `faculty`, `visitor`) devuelven `status: "EXEMPT"`.
+
+---
+
+#### `GET /api/parking/solvency-report` 🔒
+Reporte completo de solvencia de todos los estudiantes registrados.  
+**Acceso:** `admin`
+
+**Respuesta 200:**
+```json
+{
+  "success": true,
+  "summary": { "total": 50, "solvent": 38, "expired": 12 },
+  "data": [
+    { "id": 2, "name": "Juan", "cardId": "9999-2024", "isSolvent": true, "daysRemaining": 28, "status": "VIGENTE" }
+  ]
+}
+```
+
+---
+
+
+#### `POST /api/invoices/generate` 🔒
+Genera una factura para el usuario autenticado.
+
+---
+
+### 7.4 IoT — `/api/iot`
+
+> ⚠️ Esta ruta **no requiere autenticación JWT** actualmente. En producción debe protegerse con API Key o firma HMAC.
+
+#### `POST /api/iot/lpr/event`
+Recibe eventos de cámaras LPR (reconocimiento de placas). Automatiza apertura de barrera vía MQTT.
+
+**Body:**
+```json
+{
+  "plate": "ABC1234",
+  "cameraLocation": "entrada",
+  "timestamp": "2026-02-24T18:00:00.000Z"
+}
+```
+
+**Lógica:**
+- `cameraLocation` contiene `entry`/`entrada` → intenta abrir la barrera de entrada y luego asignar espacio.
+- `cameraLocation` contiene `exit`/`salida` → verifica pago, abre barrera de salida.
+- Si el vehículo no está registrado → devuelve `action: "DENY"`.
+
+**Respuesta 200:**
+```json
+{
+  "success": true,
+  "plate": "ABC1234",
+  "identifiedUser": "Carmen Lopez",
+  "action": "OPEN_GATE",
+  "message": "Bienvenido"
+}
+```
+
+---
+
+### 7.5 Health — `/health`
+
+Sin autenticación. Usados por load balancers / Docker healthchecks.
+
+| Endpoint | Descripción |
+|---|---|
+| `GET /health/liveness` | ¿Está vivo el proceso? |
+| `GET /health/readiness` | ¿Puede recibir tráfico? (verifica DB y Redis) |
+| `GET /health` | Health estándar (retrocompatibilidad) |
+
+---
+
+## 8. Modelos de Base de Datos
+
+### `users`
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment |
+| `name` | STRING | Nombre completo |
+| `email` | STRING UNIQUE | Email universitario |
+| `password` | STRING | Hasheado con bcrypt (salt=10) |
+| `role` | ENUM | `admin`, `guard`, `faculty`, `student`, `visitor` |
+| `card_id` | STRING UNIQUE | Carné universitario |
+| `vehicle_plate` | STRING UNIQUE | Placa del vehículo |
+| `has_paid` | BOOLEAN | Si pagó en la sesión actual |
+| `nit` | STRING | Para facturación FEL (default `CF`) |
+| `fiscal_address` | STRING | Dirección fiscal |
+| `fiscal_name` | STRING | Nombre fiscal |
+| `current_parking_lot_id` | INTEGER FK | Lote actual |
+| `current_parking_space` | STRING | Número de espacio actual |
+| `entry_time` | DATETIME | Hora de entrada |
+| `last_payment_amount` | DECIMAL(10,2) | Último monto pagado |
+| `refresh_token_version` | INTEGER | Para invalidación de tokens |
+| `isSolvent` | BOOLEAN | Solvencia mensual (campo existe en User) |
+| `solvencyExpires` | DATETIME | Vencimiento de solvencia |
+| `solvencyUpdatedBy` | INTEGER | Admin que actualizó |
+
+---
+
+### `parking_lots`
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `name` | STRING UNIQUE | Nombre del lote |
+| `location` | GEOMETRY(POINT, 4326) | Coordenadas GPS (PostGIS) |
+| `total_spaces` | INTEGER | Capacidad total |
+| `available_spaces` | INTEGER | Espacios disponibles |
+
+---
+
+### `parking_spaces`
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `parking_lot_id` | INTEGER FK | Lote al que pertenece |
+| `space_number` | STRING | Número del espacio |
+| `is_occupied` | BOOLEAN | Estado del espacio |
+| `entry_time` | DATETIME | Hora en que fue ocupado |
+| `occupied_by_user_id` | INTEGER FK | Usuario que lo ocupa |
+
+> Índice único: `(parking_lot_id, space_number)`
+
+---
+
+### `pricing_plans`
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `code` | STRING UNIQUE | Identificador del plan |
+| `name` | STRING | Nombre descriptivo |
+| `type` | ENUM | `HOURLY`, `FLAT_FEE`, `SUBSCRIPTION` |
+| `base_rate` | DECIMAL(10,2) | Tarifa base (GTQ) |
+| `currency` | ENUM | `GTQ`, `USD` |
+| `billing_interval` | ENUM | `HOUR`, `DAY`, `MONTH`, `ONE_TIME` |
+| `is_active` | BOOLEAN | |
+| `rules` | JSONB | `gracePeriodMinutes`, `maxDailyCap`, `weekendMultiplier` |
+
+---
+
+### `invoices`
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `invoice_number` | STRING UNIQUE | Ej: `INV-1708816800000` |
+| `user_id` | INTEGER FK | |
+| `amount` | DECIMAL(10,2) | |
+| `currency` | STRING | Default `GTQ` |
+| `status` | ENUM | `ISSUED`, `PAID`, `CANCELLED`, `FAILED` |
+| `fel_data` | JSONB | Datos de factura electrónica |
+| `items` | JSONB | Array de items `[{description, amount}]` |
+| `pdf_url` | STRING | URL del PDF generado |
+
+---
+
+### `audit_logs`
+
+Tabla de auditoría con todos los eventos relevantes del sistema (LOGIN, ASSIGN_SPACE, PAYMENT, etc.).
+
+---
+
+## 9. Middleware
+
+| Middleware | Archivo | Función |
+|---|---|---|
+| `protect` | `authMiddleware.js` | Verifica JWT. Pobla `req.userId` y `req.userRole` |
+| `authorize(...roles)` | `roleMiddleware.js` | Restringe acceso por rol |
+| `distributedRateLimit` | `rateLimitMiddleware.js` | Rate limit distribuido usando Redis |
+| `loginLimiter` | `authRoutes.js` | Rate limit express para login (5/15min) |
+| `idempotency` | `idempotencyMiddleware.js` | Previene requests duplicados |
+| `versionMiddleware` | `versionMiddleware.js` | Agrega header `X-API-Version: 2.0.0` |
+| `errorHandler` | `errorHandler.js` | Manejador global de errores |
+| `handleValidationErrors` | `validationMiddleware.js` | Procesa errores de `express-validator` |
+| `solvencyMiddleware` | `solvencyMiddleware.js` | ⚠️ Implementado pero NO aplicado en rutas |
+
+---
+
+## 10. Flujo de Negocio Principal
+
+```
+1. POST /api/auth/register   → Crear cuenta
+2. POST /api/auth/login      → Obtener accessToken + refreshToken
+3. GET  /api/parking/lots    → Ver parqueos disponibles y sus IDs
+4. POST /api/parking/assign  → Entrar al parqueo (parkingLotId en body)
+5. POST /api/parking/pay     → Pagar (calcula costo por tiempo)
+6. POST /api/parking/release → Salir (libera el espacio)
+```
+
+### Flujo de Guard
+
+```
+1. POST /api/auth/login (role: guard)
+2. GET  /api/parking/guard/active-vehicles  → Ver todos los vehículos activos
+3. POST /api/parking/guard/assign           → Asignar espacio a visitante por placa/email
+4. POST /api/parking/guard/release          → Liberar espacio por userId
+```
+
+### Flujo de Admin
+
+```
+1. POST /api/auth/login (role: admin)
+2. POST /api/parking/admin/lots              → Crear nuevo lote
+3. PATCH /api/parking/admin/lots/:id         → Modificar lote
+4. DELETE /api/parking/admin/lots/:id        → Eliminar lote
+5. GET  /api/parking/admin/users             → Ver usuarios
+6. PATCH /api/parking/admin/users/:id/role   → Cambiar rol
+7. GET  /api/parking/admin/stats/revenue     → Ver estadísticas
+```
+
+---
+
+## 11. Controladores — Responsabilidades
+
+| Archivo | Funciones |
+|---|---|
+| `auth/register.controller.js` | `register` |
+| `auth/login.controller.js` | `login`, `logout` |
+| `auth/token.controller.js` | `refreshToken` |
+| `auth/profile.controller.js` | `getMe`, `switchRole` |
+| `auth/google.controller.js` | `googleLogin` |
+| `parking/assignment.controller.js` | `assignSpace`, `releaseSpace`, `guardAssignSpace`, `guardReleaseSpace` |
+| `parking/payment.controller.js` | `payParking` |
+| `parking/query.controller.js` | `getParkingLots`, `getParkingStatus`, `getActiveVehicles` |
+| `parking/simulation.controller.js` | `simulateFill`, `simulateEmpty` |
+| `parking/admin.controller.js` | `createParkingLot`, `updateParkingLot`, `deleteParkingLot`, `getUsers`, `updateUserRole`, `getRevenueStats` |
+| `parking/solvency.controller.js` | `updateSolvency`, `checkSolvencyByCardId`, `getSolvencyReport` (**no enrutado**) |
+| `iot/lpr.controller.js` | `handleLprEvent` |
+| `invoiceController.js` | `generateInvoice` |
+| `healthController.js` | `livenessProbe`, `readinessProbe`, `standardHealth` |
+
+---
+
+## 12. Servicios Externos
+
+### MQTT (`mqttService.js`)
+- Conectado al broker configurado en `MQTT_BROKER_URL`.
+- Función principal: `openGate(gateId, userId)` — publica en el topic MQTT para abrir la barrera.
+- Llamado desde: `releaseSpace`, `guardReleaseSpace`, `lpr.controller`.
+
+### Socket.io (`socketService.js`)
+- Emite eventos en tiempo real al cliente web/app.
+- `emitParkingStatus(data)` — actualiza estado del parqueo en tiempo real.
+- `notifyUser(userId, event, data)` — notificación personal para un usuario.
+
+### Redis (`config/redis.js`)
+- `getCache(key)` / `setCache(key, value, ttlSeconds)` / `deleteCache(key)`.
+- Usado para: perfil de usuario (60 s), estado de parqueo (5 s), rate limiting distribuido.
+
+---
+
+## 13. Rate Limiting
+
+| Ruta | Límite | Ventana |
+|---|---|---|
+| `POST /api/auth/login` | 5 intentos | 15 minutos |
+| `POST /api/parking/pay` | 3 intentos | 60 segundos |
+| `POST /api/parking/gate/open` | 5 aperturas | 60 segundos |
+
+---
+
+## 14. Scripts Disponibles
+
+```bash
+npm start           # Producción
+npm run dev         # Desarrollo con nodemon
+npm run seed        # Seed principal (parqueos)
+npm run seed:users  # Seed de usuarios de prueba
+npm run seed:pricing # Seed de planes de precios
+npm run seed:all    # Todos los seeds encadenados
+npm test            # Jest con cobertura
+npm run test:auth   # Solo tests de autenticación
+npm run lint        # ESLint
+npm run docker:build
+npm run docker:up
+npm run docker:down
+```
+
+---
+
+## 15. Estado de Implementación
+
+### ✅ Completamente implementado y funcional
+- Autenticación JWT + Refresh Token + Google OAuth
+- Registro / Login / Logout / Perfil
+- CRUD completo de lotes de parqueo (admin)
+- Asignación y liberación de espacios (usuario y guard)
+- **Pago de tarifa obligatorio antes de salir** (reactivado)
+- Panel de guard (vehículos activos, asignación/liberación manual)
+- **Solvencia mensual** — 3 rutas activas: `PUT /solvency/:userId`, `GET /solvency/:cardId`, `GET /solvency-report`
+- **Middleware `checkSolvency`** aplicado en `POST /api/parking/assign` (solo bloquea a estudiantes)
+- **IoT LPR protegido** con `X-IoT-Api-Key` header (`IOT_API_KEY` en `.env`)
+- Socket.io (actualizaciones en tiempo real)
+- MQTT (apertura de barreras)
+- Health checks
+- Auditoría de eventos
+- Rate limiting distribuido (Redis)
+- Middleware de idempotencia
+- Logging con Winston
+- **Swagger UI** disponible en `GET /api-docs`
+
+### 🔧 Pendiente / Mejoras futuras
+- Proteger IoT con firma HMAC + timestamp (anti-replay) en producción
+- Completar generación de facturas FEL (felData) con proveedor certificado
+- Implementar tests unitarios para solvencia y IoT
+- Agregar ruta para que el propio estudiante consulte su solvencia (`GET /api/auth/me` ya incluye los campos)
+

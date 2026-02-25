@@ -29,7 +29,7 @@ curl http://localhost:3000/health/liveness
 ### Para DevOps/Cloud
 1. **[DEPLOYMENT.md](DEPLOYMENT.md)** - Despliegue local, Docker, producción
 2. **[SECURITY.md](SECURITY.md)** - Checklist de seguridad
-3. **[DATABASE.md](DATABASE.md)** - Configuración de PostgreSQL
+3. **[DATABASE.md](DATABASE.md)** - Configuración de MongoDB
 
 ### Para Mantenimiento
 1. **[CHANGELOG.md](CHANGELOG.md)** - Historial de versiones
@@ -51,7 +51,7 @@ TesisProyect/
 │   ├── CHANGELOG.md                 # Historial de cambios
 │   ├── IMPROVEMENTS-SUMMARY.md      # Resumen v1.1.0
 │   ├── MULTI_PARKING.md             # Soporte múltiples parqueos
-│   ├── DATABASE.md                  # PostgreSQL setup
+│   ├── DATABASE.md                  # MongoDB setup
 │   ├── INSTALL.md                   # Instalación detallada
 │   ├── MANUAL_POSTMAN.md            # Testing manual con Postman
 │   ├── REDIS_INSTALL.md             # Redis setup
@@ -193,9 +193,9 @@ Generados con `npm run seed:users`:
 
 | Email | Contraseña | Rol | Acceso |
 |-------|-----------|-----|--------|
-| admin@miumg.edu.gt | Admin@12345 | ADMIN | Todas las rutas |
-| guard@miumg.edu.gt | Guard@12345 | GUARD | Verificación y liberación |
-| juan.perez@miumg.edu.gt | Faculty@12345 | FACULTY | Estacionamiento sin límite |
+| admin@umg.edu.gt | Admin@12345 | ADMIN | Todas las rutas |
+| guard@umg.edu.gt | Guard@12345 | GUARD | Verificación y liberación |
+| juan.perez@umg.edu.gt | Faculty@12345 | FACULTY | Estacionamiento sin límite |
 | carlos.lopez@estudiante.umg.edu.gt | Student@12345 | STUDENT | Estacionamiento estándar |
 | maria.garcia@external.com | Visitor@12345 | VISITOR | Estacionamiento visitante |
 
@@ -209,12 +209,8 @@ JWT_SECRET=8f9d7e3c5b2a1f6e9d4c8b1a7f3e2d5c9b6a1f4e8d3c7b2a5f1e9d6c4b8a
 JWT_EXPIRATION=15m
 JWT_REFRESH_EXPIRATION=30d
 
-# Base de Datos PostgreSQL
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=parqueo_umg
-DB_USER=postgres
-DB_PASSWORD=tu_password_seguro
+# Base de Datos
+MONGODB_URI=mongodb://localhost:27017/parqueo_umg
 REDIS_URL=redis://localhost:6379
 
 # Servidor
@@ -329,7 +325,7 @@ Ver **[DEPLOYMENT.md](DEPLOYMENT.md)** para:
 
 ### Recursos
 - [API Docs](http://localhost:3000/api-docs)
-- [PostgreSQL Docs](https://www.postgresql.org/docs/)
+- [MongoDB Docs](https://docs.mongodb.com/)
 - [Express Docs](https://expressjs.com/)
 - [JWT Docs](https://jwt.io/)
 
@@ -353,7 +349,7 @@ Ver **[DEPLOYMENT.md](DEPLOYMENT.md)** para:
 ## 📞 Contacto
 
 Para preguntas sobre el proyecto:
-- 📧 Email: development@miumg.edu.gt
+- 📧 Email: development@umg.edu.gt
 - 🔗 GitHub: (agregar URL)
 - 📋 Issues: (agregar URL)
 

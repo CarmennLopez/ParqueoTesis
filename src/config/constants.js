@@ -34,7 +34,10 @@ module.exports = {
         VISITOR: 'visitor'   // Visitantes externos
     },
 
-    // Solvencia de parqueo
-    SOLVENCY_MONTHS: 1,     // Duración de la solvencia (pago mensual)
-    ROLES_EXEMPT_FROM_SOLVENCY: ['admin', 'guard', 'faculty', 'visitor']  // No requieren solvencia
+    // Solvencia mensual
+    SOLVENCY_MONTHS: 1, // Meses que se agregan por defecto al actualizar solvencia
+
+    // Roles que NO requieren verificación de solvencia
+    // Solo los estudiantes deben estar al día con su pago mensual
+    ROLES_EXEMPT_FROM_SOLVENCY: ['admin', 'guard', 'faculty', 'visitor']
 };

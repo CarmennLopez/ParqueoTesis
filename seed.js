@@ -1,9 +1,5 @@
 // seed.js: Script para inicializar el lote de parqueo en la base de datos
 
-const dotenv = require('dotenv');
-const path = require('path');
-
-dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const { sequelize } = require('./src/config/database');
 const { User, ParkingLot, ParkingSpace, PricingPlan } = require('./src/models');
@@ -49,7 +45,7 @@ const seedDatabase = async () => {
         // Using create for safety with hooks
         const adminUser = await User.create({
             name: 'Administrador',
-            email: 'admin@miumg.edu.gt',
+            email: 'admin@umg.edu.gt',
             password: 'adminpassword', // Hook will hash
             role: USER_ROLES.ADMIN,
             cardId: 'ADMIN001',
@@ -58,7 +54,7 @@ const seedDatabase = async () => {
 
         const guardUser = await User.create({
             name: 'Oficial de Seguridad',
-            email: 'guardia@miumg.edu.gt',
+            email: 'guardia@umg.edu.gt',
             password: 'guardpassword',
             role: USER_ROLES.GUARD,
             cardId: 'GUARD001',
@@ -67,7 +63,7 @@ const seedDatabase = async () => {
 
         const studentUser = await User.create({
             name: 'Estudiante Demo',
-            email: 'estudiante@miumg.edu.gt',
+            email: 'estudiante@umg.edu.gt',
             password: 'userpassword',
             role: USER_ROLES.STUDENT,
             cardId: 'STUDENT001',

@@ -87,7 +87,7 @@ const User = sequelize.define('User', {
         defaultValue: 0,
         field: 'refresh_token_version'
     },
-    // --- Solvencia Mensual ---
+    // Solvencia mensual (solo aplicable a estudiantes)
     isSolvent: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
@@ -101,7 +101,7 @@ const User = sequelize.define('User', {
     solvencyUpdatedBy: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        field: 'solvency_updated_by'
+        field: 'solvency_updated_by'  // FK al admin que actualizó
     }
 }, {
     tableName: 'users',

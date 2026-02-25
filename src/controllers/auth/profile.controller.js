@@ -7,45 +7,59 @@ const getMe = asyncHandler(async (req, res) => {
     const cacheKey = `user_profile:${userId}`;
 
     const cachedUser = await getCache(cacheKey);
-    if (cachedUser) return res.status(200).json({ success: true, user: cachedUser });
+    if (cachedUser) return res.status(200).json(cachedUser);
 
-    const user = await User.findByPk(userId, {
-        attributes: [
-            'id', 'name', 'email', 'role',
-            'cardId', 'vehiclePlate',
-            'hasPaid', 'currentParkingSpace', 'currentParkingLotId',
-            'isSolvent', 'solvencyExpires',
-            'entryTime', 'lastPaymentAmount',
-            'nit', 'fiscalName', 'fiscalAddress'
-        ]
-    });
+    const user = await User.findByPk(userId, { attributes: { exclude: ['password'] } });
+    if (!user) { res.status(404); throw new Error('Usuario no encontrado'); }
 
-    if (!user) {
-        return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    const userResponse = { ...user.toJSON(), _id: user.id };
+
+    // Add parking lot name
+    if (user.currentParkingLotId) {
+        const lot = await require('../../models').ParkingLot.findByPk(user.currentParkingLotId);
+        if (lot) userResponse.currentParkingLot = lot.name;
     }
-
-    const userResponse = {
-        _id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        cardId: user.cardId,
-        vehiclePlate: user.vehiclePlate,
-        hasPaid: user.hasPaid,
-        currentParkingSpace: user.currentParkingSpace ?? null,
-        currentParkingLotId: user.currentParkingLotId ?? null,
-        isSolvent: user.isSolvent,
-        solvencyExpires: user.solvencyExpires ?? null,
-        entryTime: user.entryTime ?? null,
-        lastPaymentAmount: user.lastPaymentAmount,
-        nit: user.nit,
-        fiscalName: user.fiscalName ?? null,
-        fiscalAddress: user.fiscalAddress
-    };
 
     await setCache(cacheKey, userResponse, 60);
 
-    res.status(200).json({ success: true, user: userResponse });
+    res.status(200).json(userResponse);
 });
 
-module.exports = { getMe };
+const switchRole = asyncHandler(async (req, res) => {
+    const userId = req.userId;
+    const { role } = req.body;
+    const cacheKey = `user_profile:${userId}`;
+
+    const validRoles = ['admin', 'guard', 'student', 'faculty', 'visitor'];
+    if (!validRoles.includes(role)) {
+        res.status(400);
+        throw new Error('Rol no válido');
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) { res.status(404); throw new Error('Usuario no encontrado'); }
+
+    user.role = role;
+    await user.save();
+
+    const { deleteCache } = require('../../config/redis');
+    await deleteCache(cacheKey);
+
+    const { generateAccessToken, generateRefreshToken } = require('../../utils/tokenUtils');
+    const userForToken = { ...user.toJSON(), _id: user.id };
+    const accessToken = generateAccessToken(userForToken);
+    const refreshToken = await generateRefreshToken(userForToken);
+
+    const userResponse = { ...user.toJSON(), _id: user.id };
+    delete userResponse.password;
+
+    res.status(200).json({
+        success: true,
+        message: `Rol cambiado a ${role}`,
+        user: userResponse,
+        accessToken,
+        refreshToken
+    });
+});
+
+module.exports = { getMe, switchRole };

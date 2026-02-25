@@ -66,7 +66,7 @@ git checkout -b development
 ```
 src/
 ├── controllers/   # Lógica de negocio
-├── models/       # Modelos Sequelize (PostgreSQL)
+├── models/       # Esquemas MongoDB
 ├── routes/       # Definición de rutas
 ├── middleware/   # Interceptores
 ├── services/     # Servicios (MQTT, WebSockets)
@@ -429,7 +429,7 @@ clinic doctor -- node server.js
 ### Recursos Externos
 - [Node.js Best Practices](https://github.com/goldbergyoni/nodebestpractices)
 - [Express.js Guide](https://expressjs.com/)
-- [PostgreSQL Docs](https://www.postgresql.org/docs/)
+- [MongoDB Docs](https://docs.mongodb.com/)
 - [Jest Documentation](https://jestjs.io/)
 
 ---
@@ -457,7 +457,7 @@ clinic doctor -- node server.js
 
 ## 📞 Preguntas?
 
-- 📧 Email: dev@miumg.edu.gt
+- 📧 Email: dev@umg.edu.gt
 - 💬 Abre una discussion en GitHub
 - 🔗 Consulta la documentación
 

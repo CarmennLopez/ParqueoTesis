@@ -1,6 +1,6 @@
 # Sistema de Gestión de Parqueo - API REST
 
-Sistema completo de gestión de parqueo desarrollado con Node.js, Express y PostgreSQL (Sequelize). Permite el control de entrada, pago y salida de vehículos con autenticación JWT y roles de usuario.
+Sistema completo de gestión de parqueo desarrollado con Node.js, Express y MongoDB. Permite el control de entrada, pago y salida de vehículos con autenticación JWT y roles de usuario.
 
 ## 🚀 Características
 
@@ -18,7 +18,7 @@ Sistema completo de gestión de parqueo desarrollado con Node.js, Express y Post
 ## 📋 Requisitos Previos
 
 - Node.js 16+ 
-- PostgreSQL 14+
+- MongoDB 5+ (local o MongoDB Atlas)
 - npm o yarn
 
 ## 🛠️ Instalación
@@ -49,11 +49,7 @@ Editar `.env` con tus configuraciones:
 ```env
 PORT=3000
 NODE_ENV=development
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=parking_db
-DB_USER=postgres
-DB_PASSWORD=tu_password
+MONGODB_URI=mongodb://localhost:27017/parqueo
 JWT_SECRET=tu_secreto_super_seguro_aqui
 JWT_EXPIRATION=24h
 ALLOWED_ORIGINS=http://localhost:3000
@@ -85,13 +81,7 @@ npm start
 
 El servidor estará disponible en `http://localhost:3000`
 
-## 📖 Documentación API (Swagger)
-
-Puedes ver la documentación interactiva y probar los endpoints directamente en:
-
-**http://localhost:3000/api-docs**
-
-## � Uso de la API
+## 📚 Uso de la API
 
 ### Autenticación
 
@@ -103,7 +93,7 @@ Content-Type: application/json
 
 {
   "name": "Juan Pérez",
-  "email": "juan@miumg.edu.gt",
+  "email": "juan@example.com",
   "password": "Password123",
   "cardId": "CARD001",
   "vehiclePlate": "ABC123"
@@ -123,7 +113,7 @@ POST /api/auth/login
 Content-Type: application/json
 
 {
-  "email": "juan@miumg.edu.gt",
+  "email": "juan@example.com",
   "password": "Password123"
 }
 ```
@@ -274,8 +264,11 @@ El sistema cuenta con tres roles:
 
 Para crear un administrador, modificar el rol directamente en la base de datos:
 
-```sql
-UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';
+```javascript
+db.users.updateOne(
+  { email: "admin@example.com" },
+  { $set: { role: "admin" } }
+)
 ```
 
 ## 🔒 Seguridad
@@ -285,7 +278,7 @@ UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';
 - **Helmet**: Headers HTTP seguros
 - **CORS**: Control de orígenes permitidos
 - **Rate Limiting**: Máximo 5 intentos de login cada 15 minutos
-- **Validación de datos**: Express-validator en todas las entradas
+- **Sanitización NoSQL**: Prevención de inyección NoSQL
 - **Validación de datos**: Express-validator en todas las entradas
 - **JWT**: Tokens con expiración de 24 horas
 - **Bcrypt**: Encriptación de contraseñas con salt rounds de 10
@@ -300,9 +293,10 @@ UPDATE users SET role = 'admin' WHERE email = 'admin@example.com';
    - Forzar HTTPS en producción
    - Usar certificados SSL válidos
 
-3. **PostgreSQL**:
-   - Usar PostgreSQL Cloud (RDS, Cloud SQL) o servidor dedicado
-   - Configurar backups automáticos diarios
+3. **MongoDB**:
+   - Usar MongoDB Atlas o servidor dedicado
+   - Configurar replica sets
+   - Backups automáticos diarios
 
 4. **Monitoreo**:
    - Revisar logs regularmente
@@ -358,9 +352,9 @@ npm run seed     # Inicializar/reiniciar base de datos
 
 ## 🐛 Troubleshooting
 
-### Error: "Variables de BD no definidas"
+### Error: "Variable de entorno MONGODB_URI no definida"
 - Verificar que existe el archivo `.env`
-- Verificar que `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` están definidos
+- Verificar que la variable `MONGODB_URI` está definida en el archivo
 
 ### Error: "No autorizado, no se proporcionó token"
 - Verificar que el header `Authorization` está presente
@@ -370,9 +364,10 @@ npm run seed     # Inicializar/reiniciar base de datos
 - Ejecutar `npm run seed` para reiniciar el parqueo
 - O liberar espacios usando `/api/parking/release`
 
-### Error de conexión a PostgreSQL
-- Verificar que PostgreSQL está corriendo (o Docker activo)
-- Verificar las credenciales en `.env`
+### Error de conexión a MongoDB
+- Verificar que MongoDB está corriendo
+- Verificar la URI de conexión en `.env`
+- Para MongoDB local: `mongodb://localhost:27017/parqueo`
 
 ## 📄 Licencia
 

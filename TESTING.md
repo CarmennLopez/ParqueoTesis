@@ -177,13 +177,13 @@ npm test -- --clearCache
 ```
 
 ### "Connection timeout"
-Asegurar que PostgreSQL está corriendo:
+Asegurar que PostgreSQL y Redis están corriendo:
 ```bash
-# Con Docker Compose
-docker-compose up -d postgres
+# PostgreSQL (Windows)
+net start postgresql
 
-# Windows (si está instalado localmente)
-net start postgresql-x64-16
+# Redis (Windows)
+# Iniciar redis-server.exe o el servicio de Redis
 ```
 
 ### "Tests no se ejecutan"
@@ -220,4 +220,4 @@ All files  |   50    |    45    |   55    |   50    |
 
 ---
 
-**Última actualización**: 12 de enero de 2026
+**Última actualización**: 24 de febrero de 2026

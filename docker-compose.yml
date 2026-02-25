@@ -22,7 +22,7 @@ services:
       - LDAP_SIMULATION_MODE=true
       - IOT_SIMULATION_MODE=true
       - LOG_LEVEL=info
-      - GOOGLE_CLIENT_ID=764282486192-ktjhutfv755s7s7blbm9s3huq7e909t4.apps.googleusercontent.com
+      - GOOGLE_CLIENT_ID=764282486192-95aaltldtkspjbibdi7o941nup07b8v7.apps.googleusercontent.com
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,13 +1,6 @@
-const { body, validationResult } = require('express-validator');
+const { body } = require('express-validator');
 
 const registerValidation = [
-    // Middleware para normalizar nombres de campos (snake_case -> camelCase)
-    (req, res, next) => {
-        if (req.body.card_id) req.body.cardId = req.body.card_id;
-        if (req.body.vehicle_plate) req.body.vehiclePlate = req.body.vehicle_plate;
-        next();
-    },
-
     body('name')
         .trim()
         .notEmpty().withMessage('El nombre es requerido')
@@ -17,7 +10,6 @@ const registerValidation = [
         .trim()
         .notEmpty().withMessage('El email es requerido')
         .isEmail().withMessage('Debe ser un email válido')
-        .matches(/@miumg\.edu\.gt$/).withMessage('El email debe ser del dominio @miumg.edu.gt')
         .normalizeEmail(),
 
     body('password')
@@ -33,7 +25,7 @@ const registerValidation = [
     body('vehiclePlate')
         .trim()
         .notEmpty().withMessage('La placa del vehículo es requerida')
-        .matches(/^[A-Z0-9\-]{4,10}$/i).withMessage('La placa debe tener entre 4 y 10 caracteres (letras, números y guiones)'),
+        .matches(/^[A-Z0-9]{6,8}$/i).withMessage('La placa debe tener entre 6 y 8 caracteres alfanuméricos')
 ];
 
 const loginValidation = [

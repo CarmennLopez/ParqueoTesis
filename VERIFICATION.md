@@ -1,93 +1,91 @@
 # Guía Rápida de Verificación
 
-Este documento te ayuda a verificar que todas las mejoras se implementaron correctamente.
+Este documento te ayuda a verificar que el sistema está configurado correctamente.
+**Stack actual: Node.js + Express + PostgreSQL + Sequelize + Redis**
+
+---
 
 ## ✅ Lista de Verificación Rápida
 
-### 1. Archivos Creados/Modificados
+### 1. Archivos Clave del Proyecto
 
-Verifica que existen estos archivos:
+- [ ] `src/config/constants.js` — Roles, tarifas, JWT, solvencia
+- [ ] `src/config/database.js` — Conexión Sequelize/PostgreSQL
+- [ ] `src/middleware/authMiddleware.js` — Protección JWT
+- [ ] `src/middleware/solvencyMiddleware.js` — Control de solvencia
+- [ ] `src/middleware/iotAuthMiddleware.js` — API Key para IoT
+- [ ] `src/models/AuditLog.js` — Modelo Sequelize de auditoría
+- [ ] `.env` — Variables de entorno
 
-**Nuevos archivos:**
-- [ ] `src/config/constants.js`
-- [ ] `src/config/logger.js`
-- [ ] `src/middleware/errorHandler.js`
-- [ ] `src/middleware/authorize.js`
-- [ ] `src/utils/ApiError.js`
-- [ ] `README.md`
-- [ ] `.env.example`
-- [ ] `logs/.gitkeep`
-
-**Archivos modificados:**
-- [ ] `server.js` (helmet, CORS, sanitización configurados)
-- [ ] `src/models/user.js` (campo role agregado, currentParkingSpace es String)
-- [ ] `src/models/ParkingLot.js` (campo isExclusive eliminado)
-- [ ] `src/controllers/authController.js` (validaciones completas)
-- [ ] `src/controllers/parkingController.js` (bugs corregidos)
-- [ ] `src/middleware/authMiddleware.js` (refactorizado)
-- [ ] `src/routes/authRoutes.js` (validación y rate limiting)
-- [ ] `src/routes/parkingRoutes.js` (autorización por roles)
-- [ ] `package.json` (nuevas dependencias)
-- [ ] `seed.js` (nombre sincronizado)
+---
 
 ### 2. Dependencias Instaladas
 
-Ejecuta y verifica que están instaladas:
-
 ```bash
+npm install
 npm list --depth=0
 ```
 
-Debe mostrar:
-- express-validator
-- express-rate-limit
-- express-validator
-- winston
-- compression
-- helmet
-- cors
+Dependencias clave: `express`, `sequelize`, `pg`, `pg-hstore`, `bcrypt`, `jsonwebtoken`, `ioredis`, `socket.io`, `mqtt`, `helmet`, `cors`, `winston`
+
+---
 
 ### 3. Configuración del Entorno
 
+Variables críticas en `.env`:
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=parking_db
+DB_USER=postgres
+DB_PASSWORD=tu_password
+JWT_SECRET=clave_segura_minimo_32_chars
+REDIS_URL=redis://localhost:6379
+IOT_API_KEY=iot-dev-key-umg-parking-2026
+```
+
+---
+
+### 4. Inicializar la Base de Datos
+
 ```bash
-# Copia el archivo de ejemplo si no existe tu .env
-cp .env.example .env
+# Crear la base de datos en PostgreSQL primero:
+# psql -U postgres -c "CREATE DATABASE parking_db;"
+# psql -U postgres -d parking_db -c "CREATE EXTENSION IF NOT EXISTS postgis;"
 
-# Edita .env con tus valores reales
-notepad .env
+# Luego ejecutar seeds:
+npm run seed            # Parqueo principal
+npm run seed:users      # Usuarios de prueba
+npm run seed:pricing    # Planes de precios
 ```
 
-Variables críticas a configurar:
-- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` - Configuración de conexión a PostgreSQL
-- `JWT_SECRET` - Un secreto seguro (mínimo 32 caracteres aleatorios)
-
-### 4. Prueba de Inicialización
-
-```bash
-# Inicializar la base de datos
-npm run seed
+Salida esperada al correr seeds:
+```
+✅ Conectado a PostgreSQL
+🎉 Seeding de usuarios completado:
+  ✅ admin@umg.edu.gt (admin)
+  ✅ guard@umg.edu.gt (guard)
+  ...
+🔌 Desconectado de PostgreSQL
 ```
 
-Debe mostrar:
-```
-✅ Conectado a la base de datos de PostgreSQL para la inicialización
-🎉 Inicialización Exitosa
-✅ Parqueo 'Parqueo Principal' creado con 10 espacios
-```
+---
 
 ### 5. Prueba del Servidor
 
 ```bash
-# Iniciar en modo desarrollo
 npm run dev
 ```
 
 Debe mostrar:
 ```
-✅ Conectado a la base de datos de PostgreSQL
+✅ Conexión a PostgreSQL establecida correctamente.
+🔄 Modelos sincronizados con la base de datos.
 🚀 Servidor escuchando en http://localhost:3000
-📝 Modo: development
 ```
+
+---
 
 ### 6. Pruebas de Endpoints
 
@@ -96,113 +94,97 @@ Debe mostrar:
 curl http://localhost:3000/health
 ```
 
-Esperado: `{"status":"OK","uptime":...}`
-
 #### Registro de Usuario
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Usuario Prueba",
-    "email": "prueba@miumg.edu.gt",
+    "email": "prueba@test.com",
     "password": "Prueba123",
     "cardId": "CARD001",
     "vehiclePlate": "ABC123"
   }'
 ```
 
-Esperado: Usuario creado exitosamente
-
 #### Login
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "email": "prueba@miumg.edu.gt",
-    "password": "Prueba123"
-  }'
+  -d '{"email": "prueba@test.com", "password": "Prueba123"}'
 ```
-
-Esperado: Token JWT
 
 #### Asignar Espacio (requiere token)
 ```bash
 curl -X POST http://localhost:3000/api/parking/assign \
-  -H "Authorization: Bearer TU_TOKEN_AQUI"
+  -H "Authorization: Bearer TU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"parkingLotId": 1}'
 ```
 
-Esperado: Espacio asignado (ej: "A1")
+#### Swagger UI (documentación interactiva)
+```
+http://localhost:3000/api-docs
+```
+
+---
 
 ### 7. Verificación de Seguridad
 
-#### Rate Limiting
-Intenta hacer login 6 veces seguidas con credenciales incorrectas.
-En el intento 6 debe bloquearte.
+- **Rate Limiting Login:** Intenta 6 logins incorrectos seguidos → el 6to debe bloquearte.
+- **Solvencia:** Un estudiante sin solvencia al intentar `POST /api/parking/assign` debe recibir `402`.
+- **IoT Auth:** `POST /api/iot/lpr/event` sin el header `X-IoT-Api-Key` debe dar `401` (en producción).
+- **Roles:** Usuario `student` en `GET /api/parking/status` debe dar `403`.
 
-#### Validación de Contraseña
-Intenta registrar con contraseña "123" - debe rechazarla.
+---
 
-#### CORS
-Si tienes configurado ALLOWED_ORIGINS, intenta acceder desde un origen no permitido.
+### 8. Verificar Roles de Prueba
 
-### 8. Verificación de Logs
+Usa `POST /api/auth/switch-role` con `{"role": "admin"}` para cambiar tu rol durante pruebas.
 
-Verifica que se crearon los archivos de log:
-
+O bien usa la API de administración:
 ```bash
-ls logs/
+curl -X PATCH http://localhost:3000/api/parking/admin/users/2/role \
+  -H "Authorization: Bearer TOKEN_ADMIN" \
+  -H "Content-Type: application/json" \
+  -d '{"role": "guard"}'
 ```
 
-Debe mostrar:
-- `error.log` (si hubo errores)
-- `combined.log`
-- `.gitkeep`
-
-### 9. Verificación de Roles
-
-Para probar el sistema de roles:
-
-1. Crea un usuario admin en PostgreSQL:
-```sql
-UPDATE users SET role = 'admin' WHERE email = 'prueba@miumg.edu.gt';
-```
-
-2. Intenta acceder al endpoint de status:
-```bash
-curl -X GET http://localhost:3000/api/parking/status \
-  -H "Authorization: Bearer TU_TOKEN_DE_ADMIN"
-```
-
-Esperado: Estado completo del parqueo
-
-3. Con usuario normal debe dar 403 Forbidden
+---
 
 ## ⚠️ Problemas Comunes
 
-### "Error: variables de entorno de BD no definidas"
-- Verifica que `.env` existe y tiene `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` configurados
+### Error de conexión a PostgreSQL
+- Verifica que PostgreSQL está corriendo: `pg_ctl status` o `net start postgresql`
+- Verifica `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` en `.env`
 
-### "Error de conexión a PostgreSQL"
-- Verifica que PostgreSQL está corriendo (o el contenedor Docker está activo)
-- Verifica las credenciales de conexión en `.env`
+### Error PostGIS
+```sql
+-- Conectar a la BD y ejecutar:
+CREATE EXTENSION IF NOT EXISTS postgis;
+```
 
-### "Cannot find module 'winston'"
-- Ejecuta `npm install`
+### Error de Redis
+- Verifica que Redis está corriendo: `redis-cli ping` debe responder `PONG`
+- Si no tienes Redis puedes deshabilitarlo temporalmente en el código de caché
 
 ### "Parqueo lleno"
 - Ejecuta `npm run seed` para reiniciar
 
 ### Logs no se crean
-- Verifica que el directorio `logs/` existe
-- Winston lo creará automáticamente si no existe
+- Winston crea el directorio `logs/` automáticamente
+
+---
 
 ## ✨ Todo Funciona
 
-Si todas las verificaciones pasaron, ¡felicitaciones! El sistema está listo para usar.
+Si todas las verificaciones pasaron, ¡el sistema está listo!
 
-**Siguientes pasos:**
-1. Crear tu primer usuario administrador
-2. Probar el flujo completo: registro → login → asignar → pagar → salir
-3. Revisar los logs para familiarizarte con el sistema
+**Flujo principal:**
+1. Registro / Login
+2. `GET /api/parking/lots` → ver parqueos disponibles
+3. `POST /api/parking/assign` → entrar al parqueo
+4. `POST /api/parking/pay` → pagar
+5. `POST /api/parking/release` → salir
 
-Para más detalles, consulta el `README.md` completo.
+Para referencia completa de endpoints: `PROJECT_DOCUMENTATION.md`

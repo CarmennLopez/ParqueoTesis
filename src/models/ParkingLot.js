@@ -12,12 +12,13 @@ const ParkingLot = sequelize.define('ParkingLot', {
     allowNull: false,
     unique: true
   },
-  // Location stored as JSON (lat, lon) - without PostGIS dependency
+  // Ubicación almacenada como GeoJSON (no requiere PostGIS)
+  // Formato esperado: { type: "Point", coordinates: [lng, lat] }
   location: {
-    type: DataTypes.JSON, // Simplified: removes PostGIS requirement
-    allowNull: false,
-    defaultValue: { lat: 0, lon: 0 }
+    type: DataTypes.JSONB,
+    allowNull: true
   },
+
   totalSpaces: {
     type: DataTypes.INTEGER,
     allowNull: false,
