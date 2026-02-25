@@ -1,4 +1,8 @@
-# 🚀 GUÍA DE DESPLIEGUE
+# 🚀 GUÍA DE DESPLIEGUE — Sistema de Parqueo UMG v2.0
+
+**Stack:** Node.js + Express 5 + PostgreSQL + Redis + Docker
+
+---
 
 ## Índice
 1. [Despliegue Local](#local)
@@ -11,9 +15,9 @@
 ## 📱 Despliegue Local {#local}
 
 ### Requisitos
-- Node.js 16+
-- MongoDB 5+
-- Redis (Memurai en Windows, Redis en Linux/Mac)
+- Node.js 18+
+- PostgreSQL 14+ (local)
+- Redis / Memurai 6+
 
 ### Pasos
 
@@ -25,37 +29,30 @@ npm install
 2. **Configurar variables de entorno**
 ```bash
 cp .env.example .env
-# Editar .env con valores locales
+# Editar .env con tu DB_PASSWORD y demás valores
 ```
 
-3. **Inicializar base de datos**
+3. **Crear la base de datos** (si no existe)
 ```bash
-# Crear espacios de parqueo
-npm run seed
-
-# Crear usuarios de prueba
-npm run seed:users
-
-# Crear planes de precios
-npm run seed:pricing
-
-# O todos a la vez
-npm run seed:all
+psql -U postgres -c "CREATE DATABASE parking_db;"
 ```
 
-4. **Ejecutar servidor**
+4. **Iniciar servidor** (las tablas se crean automáticamente)
 ```bash
-# Desarrollo con auto-reload
 npm run dev
-
-# Producción
-npm start
 ```
 
-5. **Verificar**
+5. **Poblar datos de prueba** (opcional)
 ```bash
-curl http://localhost:3000/health/liveness
-# Respuesta: {"status":"UP"}
+node seeders/seedUsers.js
+node seeders/seedPricingPlans.js
+node seeders/seedParkingLots.js
+```
+
+6. **Verificar**
+```bash
+curl http://localhost:3000/health
+# Respuesta: {"status":"OK","services":{"database":"connected","redis":"connected"}}
 ```
 
 ---
@@ -68,7 +65,7 @@ curl http://localhost:3000/health/liveness
 # Construir imagen
 npm run docker:build
 
-# Iniciar servicios (API + MongoDB + Redis)
+# Iniciar servicios (API + PostgreSQL + Redis)
 npm run docker:up
 
 # Ver logs
@@ -86,12 +83,12 @@ services:
     - Node.js API
     - Puerto: 3000
     - Healthcheck cada 30s
-  
-  mongo:
-    - MongoDB 7.0
-    - Puerto: 27017
-    - Volumen: mongo_data
-  
+
+  postgres:
+    - PostgreSQL 15
+    - Puerto: 5432
+    - Volumen: postgres_data
+
   redis:
     - Redis Alpine
     - Puerto: 6379
@@ -104,14 +101,16 @@ services:
 # Ver estado de containers
 docker-compose ps
 
-# Ejecutar comando en container
-docker-compose exec api npm run seed:all
+# Ejecutar seeders dentro del container
+docker-compose exec api node seeders/seedUsers.js
+docker-compose exec api node seeders/seedPricingPlans.js
+docker-compose exec api node seeders/seedParkingLots.js
 
-# Limpiar todo (cuidado!)
+# Limpiar todo (cuidado: elimina la BD!)
 docker-compose down -v
 
-# Ver logs de un servicio específico
-docker-compose logs mongo
+# Ver logs de PostgreSQL
+docker-compose logs postgres
 ```
 
 ---
@@ -120,10 +119,9 @@ docker-compose logs mongo
 
 ### Pre-requisitos
 - Servidor Linux (Ubuntu 20.04+)
-- Docker y Docker Compose instalados
-- Dominio configurado
-- Certificado SSL/TLS
-- MongoDB Atlas o BD autogestionada
+- Docker y Docker Compose
+- Dominio configurado y certificado SSL
+- PostgreSQL (gestionado o servidor dedicado)
 - Redis en producción
 
 ### Variables de Entorno (Producción)
@@ -133,21 +131,26 @@ docker-compose logs mongo
 NODE_ENV=production
 PORT=3000
 
-# Base de datos
-MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/parqueo
-MONGODB_TIMEOUT=5000
-MONGODB_RETRY_ATTEMPTS=5
+# Base de datos PostgreSQL
+DB_HOST=prod-postgres.example.com
+DB_PORT=5432
+DB_NAME=parking_db
+DB_USER=parqueo_app
+DB_PASSWORD=<contraseña_muy_segura>
 
 # Redis (con autenticación)
 REDIS_URL=redis://:strong_password@redis.example.com:6379
 
 # JWT (generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
 JWT_SECRET=<generar_valor_aleatorio_64_caracteres>
-JWT_EXPIRATION=15m
-JWT_REFRESH_EXPIRATION=30d
+JWT_EXPIRATION=1h
+JWT_REFRESH_EXPIRATION=7d
 
 # CORS (solo dominios autorizados)
 ALLOWED_ORIGINS=https://app.umg.edu.gt,https://admin.umg.edu.gt
+
+# IoT
+IOT_API_KEY=<clave_secreta_para_dispositivos_iot>
 
 # Parqueo
 PARKING_LOT_NAME=Parqueo Principal UMG
@@ -170,8 +173,8 @@ ssh user@production.example.com
 
 2. **Clonar repositorio**
 ```bash
-git clone https://github.com/your-org/TesisProyect.git
-cd TesisProyect
+git clone https://github.com/CarmennLopez/ParqueoTesis.git
+cd ParqueoTesis
 ```
 
 3. **Crear archivo .env**
@@ -183,7 +186,7 @@ nano .env
 
 4. **Construir imagen**
 ```bash
-docker build -t parking-api:v1.0 .
+docker build -t parking-api:v2.0 .
 ```
 
 5. **Iniciar servicios**
@@ -193,12 +196,14 @@ docker-compose -f docker-compose.yml up -d
 
 6. **Verificar salud**
 ```bash
-curl https://api.example.com/health/liveness
+curl https://api.example.com/health
 ```
 
 7. **Inicializar datos (solo primera vez)**
 ```bash
-docker-compose exec api npm run seed:all
+docker-compose exec api node seeders/seedUsers.js
+docker-compose exec api node seeders/seedPricingPlans.js
+docker-compose exec api node seeders/seedParkingLots.js
 ```
 
 ### Nginx como Reverse Proxy
@@ -219,7 +224,6 @@ server {
     ssl_certificate /etc/letsencrypt/live/api.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/api.example.com/privkey.pem;
 
-    # Security headers
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
@@ -236,7 +240,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Health check endpoint (sin logs)
     location /health {
         access_log off;
         proxy_pass http://localhost:3000;
@@ -258,31 +261,30 @@ sudo apt install certbot python3-certbot-nginx -y
 sudo certbot certonly --nginx -d api.example.com
 ```
 
-### Backup Automatizado
+### Backup Automatizado (PostgreSQL)
 
 ```bash
-# /usr/local/bin/backup-mongodb.sh
+# /usr/local/bin/backup-postgres.sh
 #!/bin/bash
 
-BACKUP_DIR="/backups/mongodb"
+BACKUP_DIR="/backups/postgres"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p $BACKUP_DIR
 
-docker-compose exec -T mongo mongodump \
-  --uri="mongodb://user:pass@mongo:27017/parqueo" \
-  --out=$BACKUP_DIR/dump_$TIMESTAMP
+pg_dump -U parqueo_app -h prod-postgres.example.com parking_db \
+  > $BACKUP_DIR/dump_$TIMESTAMP.sql
 
 # Mantener solo últimos 30 días
-find $BACKUP_DIR -maxdepth 1 -type d -mtime +30 -exec rm -rf {} \;
+find $BACKUP_DIR -name "*.sql" -mtime +30 -delete
 
-echo "Backup completado: $BACKUP_DIR/dump_$TIMESTAMP"
+echo "Backup completado: $BACKUP_DIR/dump_$TIMESTAMP.sql"
 ```
 
 Agregar a crontab:
 ```bash
 # Backup diario a las 2:00 AM
-0 2 * * * /usr/local/bin/backup-mongodb.sh
+0 2 * * * /usr/local/bin/backup-postgres.sh
 ```
 
 ---
@@ -292,20 +294,18 @@ Agregar a crontab:
 ### Health Checks
 
 ```bash
-# Liveness - ¿está vivo?
-curl https://api.example.com/health/liveness
-
-# Readiness - ¿está listo?
-curl https://api.example.com/health/readiness
+# Estado completo del sistema
+curl https://api.example.com/health
+# {"status":"OK","services":{"database":"connected","redis":"connected"}}
 ```
 
 ### Logs en Tiempo Real
 
 ```bash
-# Últimos 50 líneas
+# Últimas 50 líneas
 docker-compose logs -f --tail=50 api
 
-# Errores solo
+# Solo errores
 docker-compose logs api | grep ERROR
 
 # Con timestamps
@@ -318,11 +318,12 @@ docker-compose logs -t api
 # Espacio en disco
 df -h
 
-# Uso de memoria/CPU
+# Uso de memoria/CPU por container
 docker stats
 
-# Conexiones MongoDB
-docker-compose exec mongo mongosh --eval "db.serverStatus()"
+# Conexiones activas en PostgreSQL
+docker-compose exec postgres psql -U parqueo_app -d parking_db \
+  -c "SELECT count(*) FROM pg_stat_activity WHERE state = 'active';"
 ```
 
 ### Alertas Recomendadas
@@ -330,10 +331,10 @@ docker-compose exec mongo mongosh --eval "db.serverStatus()"
 | Métrica | Umbral | Acción |
 |---------|--------|--------|
 | CPU | > 80% | Escalar horizontalmente |
-| Memoria | > 85% | Revisar leaks |
+| Memoria | > 85% | Revisar memory leaks |
 | Disco | > 90% | Limpiar logs antiguos |
 | Errores API | > 5% | Revisar logs |
-| Response Time | > 1s | Optimizar queries |
+| Response Time | > 1s | Optimizar queries SQL |
 
 ---
 
@@ -346,11 +347,11 @@ git pull origin main
 # Reconstruir imagen
 docker-compose build --no-cache
 
-# Reiniciar servicios
+# Reiniciar servicios (sin downtime con --no-deps)
 docker-compose up -d
 
 # Verificar
-curl https://api.example.com/health/liveness
+curl https://api.example.com/health
 ```
 
 ---
@@ -363,24 +364,28 @@ docker-compose logs api
 # Ver error específico
 ```
 
-### MongoDB no responde
+### PostgreSQL no responde
 ```bash
-# Reiniciar
-docker-compose restart mongo
+# Verificar estado
+docker-compose exec postgres pg_isready
 
-# O desde cero
-docker-compose down -v
-docker-compose up -d
-docker-compose exec api npm run seed:all
+# Reiniciar
+docker-compose restart postgres
+
+# Verificar conexión desde la API
+docker-compose exec api node -e "
+const { sequelize } = require('./src/config/database');
+sequelize.authenticate().then(() => console.log('OK')).catch(console.error);
+"
 ```
 
 ### Redis timeout
 ```bash
 # Verificar conexión
-docker-compose exec api redis-cli ping
+docker-compose exec redis redis-cli ping
 # Respuesta: PONG
 
-# Revisar memoria
+# Ver memoria usada
 docker-compose exec redis redis-cli INFO memory
 ```
 
@@ -395,4 +400,4 @@ openssl s_client -connect api.example.com:443
 
 ---
 
-**Última actualización**: 12 de enero de 2026
+**Última actualización**: Febrero 2026 | **Versión**: 2.0.0 (PostgreSQL)

@@ -77,14 +77,14 @@ router.post('/endpoint', [
 
 ## 4. BASE DE DATOS
 
-### MongoDB
-- **Conexión**: Variables de entorno (`MONGODB_URI`)
-- **Autenticación**: Usuario y contraseña requeridos
-- **Sanitización**: Validación de inputs contra inyección
+### PostgreSQL
+- **Conexión**: Variables individuales (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`)
+- **ORM**: Sequelize — protege contra SQL injection automáticamente
+- **Autenticación**: Usuario y contraseña requeridos, nunca en texto plano
 
 ### Redis
-- **Caché**: Tokens y sesiones
-- **Expiración**: TTL automático
+- **Caché**: Rate limiting y sesiones de idempotencia
+- **Expiración**: TTL automático en todas las claves
 - **Seguridad**: Requiere autenticación en producción
 
 ```env
@@ -100,11 +100,15 @@ REDIS_URL=redis://:tu_password_seguro@redis-host:6379
 
 ### Variables Esenciales:
 ```env
-JWT_SECRET=                    # ⚠️ CRÍTICO - 32+ caracteres aleatorios
-MONGODB_URI=                   # Credenciales seguras
-REDIS_URL=                     # Con autenticación en prod
-NODE_ENV=production            # Nunca 'development' en producción
-ALLOWED_ORIGINS=               # Solo dominios confiables
+JWT_SECRET=         # ⚠️ CRÍTICO - 32+ caracteres aleatorios
+DB_HOST=            # Host de PostgreSQL
+DB_USER=            # Usuario de PostgreSQL
+DB_PASSWORD=        # ⚠️ CRÍTICO - nunca en texto plano
+DB_NAME=            # Nombre de la base de datos
+REDIS_URL=          # Con autenticación en prod
+IOT_API_KEY=        # ⚠️ Clave para dispositivos IoT
+NODE_ENV=production # Nunca 'development' en producción
+ALLOWED_ORIGINS=    # Solo dominios confiables
 ```
 
 ### Archivo .gitignore (debe incluir):
@@ -128,8 +132,8 @@ logs/
 
 ### Auditoría
 - Cada acción crítica registra: usuario, IP, timestamp
-- Tabla AuditLog en MongoDB
-- Consultas auditables por usuario
+- Tabla `audit_logs` en PostgreSQL
+- Consultas auditables por usuario y por acción
 
 ```javascript
 logAudit(req, 'REGISTER', 'User', { userId, email });
@@ -152,14 +156,16 @@ Esto previene duplicación si una request se reinicia.
 
 ### Checklist de Deployment:
 - [ ] `NODE_ENV=production`
-- [ ] `JWT_SECRET` generado aleatoriamente
+- [ ] `JWT_SECRET` generado aleatoriamente (32+ chars)
+- [ ] `IOT_API_KEY` configurado con valor único
 - [ ] CORS limitado a dominios autorizados
 - [ ] HTTPS/TLS en todas las conexiones
-- [ ] MongoDB con credenciales fuertes
-- [ ] Redis con autenticación
+- [ ] PostgreSQL con usuario dedicado y contraseña fuerte
+- [ ] Redis con autenticación (`REDIS_URL=redis://:password@host:6379`)
+- [ ] `.env` excluido del repositorio (`.gitignore`)
 - [ ] Logs rotativos habilitados
 - [ ] Health checks configurados
-- [ ] Backups automatizados
+- [ ] Backups de PostgreSQL automatizados (`pg_dump`)
 - [ ] Monitoreo y alertas activos
 
 ### Docker:
@@ -171,7 +177,11 @@ docker build -t parking-api:prod .
 docker run -d \
   -e NODE_ENV=production \
   -e JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))") \
-  -e MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/db \
+  -e DB_HOST=postgres-host \
+  -e DB_USER=parqueo_app \
+  -e DB_PASSWORD=password_seguro \
+  -e DB_NAME=parking_db \
+  -e IOT_API_KEY=clave-secreta-iot \
   parking-api:prod
 ```
 
@@ -181,14 +191,16 @@ docker run -d \
 
 | Vulnerabilidad | Mitigación |
 |---|---|
-| SQL Injection | Mongoose ODM + validación |
-| NoSQL Injection | express-mongo-sanitize (comentado - buscar alternativa) |
+| SQL Injection | Sequelize ORM con queries parametrizadas |
+| Credential Exposure | Variables de entorno + `.env` en `.gitignore` |
 | XSS | Content-Security-Policy vía Helmet |
 | CSRF | Token validation en formularios |
-| Weak JWT | Algoritmo HS256 + secret fuerte |
-| Default Credentials | Sin credenciales por defecto |
-| Exposed Secrets | Variables de entorno, .gitignore |
+| Weak JWT | Algoritmo HS256 + secret 32+ chars |
+| Brute Force | Rate limiting Redis (5 intentos/15 min) |
+| IoT Spoofing | `X-IoT-Api-Key` header obligatorio |
+| Default Credentials | Sin credenciales por defecto en código |
 | Weak Encryption | Bcrypt para contraseñas, HTTPS obligatorio |
+| Replay Attack | Middleware de idempotencia con TTL en Redis |
 
 ---
 
@@ -208,7 +220,8 @@ docker run -d \
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [Node.js Security Best Practices](https://nodejs.org/en/docs/guides/security/)
 - [JWT Best Practices](https://tools.ietf.org/html/rfc8949)
-- [MongoDB Security](https://docs.mongodb.com/manual/security/)
+- [PostgreSQL Security](https://www.postgresql.org/docs/current/security.html)
+- [Sequelize Security](https://sequelize.org/docs/v6/core-concepts/raw-queries/)
 
 ---
 
@@ -221,5 +234,5 @@ Para reportar vulnerabilidades de seguridad:
 
 ---
 
-**Última actualización**: 12 de enero de 2026
-**Versión**: 1.0
+**Última actualización**: Febrero 2026  
+**Versión**: 2.0 (PostgreSQL/Sequelize)
