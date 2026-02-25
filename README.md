@@ -1,33 +1,51 @@
-# Sistema de Gestión de Parqueo - API REST
+# 🅿️ Sistema de Gestión de Parqueo UMG — API REST v2.0
 
-Sistema completo de gestión de parqueo desarrollado con Node.js, Express y MongoDB. Permite el control de entrada, pago y salida de vehículos con autenticación JWT y roles de usuario.
+Sistema completo de gestión de parqueo desarrollado con **Node.js, Express 5 y PostgreSQL (Sequelize)**. Permite el control de entrada, pago y salida de vehículos con autenticación JWT, roles de usuario, solvencia mensual para estudiantes e integración con dispositivos IoT.
+
+[![Node.js](https://img.shields.io/badge/Node.js-22+-green)](https://nodejs.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue)](https://postgresql.org)
+[![Express](https://img.shields.io/badge/Express-5.x-lightgrey)](https://expressjs.com)
+
+---
 
 ## 🚀 Características
 
-- ✅ Sistema de autenticación con JWT
-- ✅ Gestión de espacios de parqueo en tiempo real
-- ✅ Cálculo automático de tarifas por tiempo
-- ✅ Validación de pago antes de permitir salida
-- ✅ Panel de administración para ver estado del parqueo
-- ✅ Sistema de roles (Usuario, Administrador, Operador)
-- ✅ Validación robusta de datos
-- ✅ Seguridad con Helmet, CORS y sanitización
-- ✅ Rate limiting para prevenir ataques de fuerza bruta
-- ✅ Logging profesional con Winston
+- ✅ Autenticación JWT con **Access Token (1h) + Refresh Token (7d)**
+- ✅ Login con **Google OAuth 2.0**
+- ✅ Sistema de **5 roles**: `admin`, `guard`, `faculty`, `student`, `visitor`
+- ✅ **Solvencia mensual** para estudiantes (control de pago de cuota de parqueo)
+- ✅ Gestión de espacios de parqueo en **tiempo real** (Socket.io)
+- ✅ Cálculo automático de tarifas por tiempo (motor de precios)
+- ✅ **Validación de pago** obligatoria antes de salida
+- ✅ Apertura de barreras por **MQTT** (modo simulación disponible)
+- ✅ **IoT LPR** — reconocimiento de placas con autenticación por API Key
+- ✅ **Swagger UI** interactivo en `/api-docs`
+- ✅ Rate limiting distribuido con **Redis**
+- ✅ Middleware de **idempotencia** para evitar requests duplicados
+- ✅ **Auditoría** de eventos en PostgreSQL
+- ✅ Logging profesional con **Winston**
+- ✅ Tests con **Jest + Supertest**
+
+---
 
 ## 📋 Requisitos Previos
 
-- Node.js 16+ 
-- MongoDB 5+ (local o MongoDB Atlas)
-- npm o yarn
+| Tecnología | Versión mínima |
+|---|---|
+| Node.js | 18+ |
+| PostgreSQL | 14+ |
+| Redis / Memurai | 6+ |
+| npm | 8+ |
 
-## 🛠️ Instalación
+---
+
+## 🛠️ Instalación Rápida
 
 ### 1. Clonar el repositorio
 
 ```bash
-git clone <url-del-repositorio>
-cd TesisProyect
+git clone https://github.com/CarmennLopez/ParqueoTesis.git
+cd ParqueoTesis
 ```
 
 ### 2. Instalar dependencias
@@ -36,271 +54,154 @@ cd TesisProyect
 npm install
 ```
 
-### 3. Configurar variables de entorno
+### 3. Crear base de datos en PostgreSQL
 
-Crear un archivo `.env` basado en `.env.example`:
+```sql
+-- En psql o pgAdmin:
+CREATE DATABASE parking_db;
+```
+
+### 4. Configurar variables de entorno
 
 ```bash
+# Copiar plantilla
 cp .env.example .env
 ```
 
-Editar `.env` con tus configuraciones:
+Editar `.env` con tus valores:
 
 ```env
-PORT=3000
+# Base de datos
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=parking_db
+DB_USER=postgres
+DB_PASSWORD=tu_contraseña
+
+# JWT
+JWT_SECRET=clave_aleatoria_minimo_32_chars
+JWT_EXPIRATION=1h
+JWT_REFRESH_EXPIRATION=7d
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# IoT (cámaras LPR)
+IOT_API_KEY=clave-secreta-iot
+
+# Configuración
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/parqueo
-JWT_SECRET=tu_secreto_super_seguro_aqui
-JWT_EXPIRATION=24h
-ALLOWED_ORIGINS=http://localhost:3000
-PARKING_LOT_NAME=Parqueo Principal
-LOG_LEVEL=info
+PORT=3000
+PARKING_LOT_NAME=Parqueo Principal UMG
+MQTT_SIMULATION_MODE=true
 ```
-
-### 4. Inicializar la base de datos
-
-Ejecutar el script de seed para crear el parqueo inicial:
-
-```bash
-npm run seed
-```
-
-Este comando creará un lote de parqueo con 10 espacios (A1-A5, B1-B5).
 
 ### 5. Iniciar el servidor
 
-**Modo desarrollo (con auto-reload):**
 ```bash
 npm run dev
 ```
 
-**Modo producción:**
-```bash
-npm start
-```
+Las tablas se crean automáticamente con `sync({ alter: true })` al arrancar.
 
-El servidor estará disponible en `http://localhost:3000`
-
-## 📚 Uso de la API
-
-### Autenticación
-
-#### Registrar Usuario
+### 6. Poblar datos de prueba (opcional)
 
 ```bash
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "name": "Juan Pérez",
-  "email": "juan@example.com",
-  "password": "Password123",
-  "cardId": "CARD001",
-  "vehiclePlate": "ABC123"
-}
+node seeders/seedUsers.js         # Usuarios de prueba
+node seeders/seedPricingPlans.js  # Planes de precios
+node seeders/seedParkingLots.js   # Lotes de parqueo
 ```
 
-**Requisitos de contraseña:**
-- Mínimo 8 caracteres
-- Al menos una letra mayúscula
-- Al menos una letra minúscula
-- Al menos un número
+---
 
-#### Iniciar Sesión
+## 📖 Documentación Interactiva
 
-```bash
-POST /api/auth/login
-Content-Type: application/json
+Con el servidor corriendo, abre:
 
-{
-  "email": "juan@example.com",
-  "password": "Password123"
-}
-```
+**http://localhost:3000/api-docs**
 
-**Respuesta:**
-```json
-{
-  "message": "Inicio de sesión exitoso",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": "...",
-    "name": "Juan Pérez",
-    "email": "juan@example.com",
-    "role": "user",
-    "hasPaid": false,
-    "currentParkingSpace": null
-  }
-}
-```
+Swagger UI muestra todos los endpoints con ejemplos de request/response y permite probarlos directamente.
 
-### Sistema de Parqueo
+> Ver también: [`SWAGGER_GUIDE.md`](./SWAGGER_GUIDE.md) para flujos de prueba paso a paso.
 
-**📝 Nota:** Todas las rutas de parqueo requieren autenticación. Incluir el token en el header:
+---
 
-```
-Authorization: Bearer <tu_token_jwt>
-```
+## 📚 Endpoints Principales
 
-#### 1. Asignar Espacio (Entrada)
+### Auth — `/api/auth`
 
-```bash
-POST /api/parking/assign
-Authorization: Bearer <token>
-```
+| Método | Ruta | Descripción | Acceso |
+|---|---|---|---|
+| POST | `/register` | Registrar usuario | Público |
+| POST | `/login` | Iniciar sesión | Público |
+| POST | `/google` | Login con Google | Público |
+| POST | `/refresh` | Renovar access token | Público |
+| POST | `/logout` | Cerrar sesión | JWT |
+| GET | `/me` | Ver perfil propio | JWT |
 
-**Respuesta:**
-```json
-{
-  "message": "Espacio asignado con éxito",
-  "space": "A1",
-  "entryTime": "2025-11-22T06:00:00.000Z",
-  "rate": "$2.5 por hora"
-}
-```
+### Parqueo — `/api/parking`
 
-#### 2. Pagar Estacionamiento
+| Método | Ruta | Descripción | Roles |
+|---|---|---|---|
+| GET | `/lots` | Ver parqueos disponibles | JWT |
+| POST | `/assign` | Entrar al parqueo | JWT + Solvencia* |
+| POST | `/pay` | Pagar tarifa | JWT |
+| POST | `/release` | Salir del parqueo | JWT |
+| GET | `/status` | Estado del sistema | admin |
+| GET | `/admin/active-vehicles` | Vehículos activos | admin, guard |
+| POST | `/admin/assign` | Asignar manualmente | admin, guard |
+| POST | `/admin/release` | Liberar manualmente | admin, guard |
 
-```bash
-POST /api/parking/pay
-Authorization: Bearer <token>
-```
+*`/assign` requiere solvencia solo para rol `student`.
 
-**Respuesta:**
-```json
-{
-  "message": "Pago registrado con éxito. Puede proceder a la salida.",
-  "costoPagado": "$5.00",
-  "tiempoEstancia": "120 minutos",
-  "horasCobradas": 2,
-  "tarifaPorHora": "$2.5",
-  "hasPaid": true
-}
-```
+### Solvencia — `/api/parking/solvency`
 
-#### 3. Salir del Parqueo (Liberar Espacio)
+| Método | Ruta | Descripción | Roles |
+|---|---|---|---|
+| PUT | `/:userId` | Marcar usuario como solvente | admin, guard |
+| GET | `/:cardId` | Consultar solvencia por carné | admin, guard, student, faculty |
+| GET | `/solvency-report` | Reporte de solvencia | admin |
 
-```bash
-POST /api/parking/release
-Authorization: Bearer <token>
-```
+### IoT — `/api/iot`
 
-**Respuesta (con pago realizado):**
-```json
-{
-  "message": "¡Salida exitosa! Espacio A1 liberado. Barrera abierta.",
-  "timeSpent": "120 minutos",
-  "horasCobradas": 2,
-  "costFinal": "$5.00"
-}
-```
+| Método | Ruta | Descripción | Auth |
+|---|---|---|---|
+| POST | `/lpr/event` | Evento de cámara LPR | `X-IoT-Api-Key` header |
 
-**Respuesta (sin pago):**
-```json
-{
-  "message": "Salida denegada. Debe pagar el servicio de parqueo.",
-  "requiredAction": "Pagar en /api/parking/pay",
-  "timeSpent": "120 minutos",
-  "horasCobrar": 2,
-  "totalCost": "$5.00"
-}
-```
+### Facturas — `/api/invoices`
 
-#### 4. Ver Estado del Parqueo (Solo Administradores)
+| Método | Ruta | Descripción | Roles |
+|---|---|---|---|
+| POST | `/generate` | Generar factura | JWT |
+| GET | `/my` | Mis facturas | JWT |
+| GET | `/:id/pdf` | Descargar PDF | JWT |
 
-```bash
-GET /api/parking/status
-Authorization: Bearer <token_admin>
-```
+---
 
-**Respuesta:**
-```json
-{
-  "parkingLotName": "Parqueo Principal",
-  "location": "Centro Comercial",
-  "totalSpaces": 10,
-  "occupiedSpaces": 3,
-  "availableSpaces": 7,
-  "occupiedDetails": [
-    {
-      "spaceNumber": "A1",
-      "occupiedBy": {
-        "name": "Juan Pérez",
-        "email": "juan@example.com",
-        "vehiclePlate": "ABC123"
-      },
-      "entryTime": "2025-11-22T06:00:00.000Z",
-      "durationMinutes": 45,
-      "estimatedCost": "$2.50"
-    }
-  ],
-  "ratePerHour": "$2.5"
-}
-```
+## 👥 Roles y Permisos
 
-### Health Check
+| Rol | Puede entrar al parqueo | Requiere solvencia | Puede abrir barrera | Admin |
+|---|:---:|:---:|:---:|:---:|
+| `student` | ✅ | ✅ | ❌ | ❌ |
+| `faculty` | ✅ | ❌ | ❌ | ❌ |
+| `visitor` | ✅ | ❌ | ❌ | ❌ |
+| `guard` | ✅ | ❌ | ✅ | Parcial |
+| `admin` | ✅ | ❌ | ✅ | ✅ |
 
-```bash
-GET /health
-```
-
-**Respuesta:**
-```json
-{
-  "status": "OK",
-  "uptime": 12345,
-  "timestamp": 1700000000000,
-  "environment": "development"
-}
-```
-
-## 👥 Sistema de Roles
-
-El sistema cuenta con tres roles:
-
-- **user**: Usuario normal (puede usar el parqueo)
-- **admin**: Administrador (acceso completo, puede ver estadísticas)
-- **operator**: Operador (puede ver estadísticas y gestionar parqueo)
-
-Para crear un administrador, modificar el rol directamente en la base de datos:
-
-```javascript
-db.users.updateOne(
-  { email: "admin@example.com" },
-  { $set: { role: "admin" } }
-)
-```
+---
 
 ## 🔒 Seguridad
 
-### Implementaciones de Seguridad
+- **JWT** con access token de corta vida (1h) + refresh token (7d) con rotación
+- **Helmet** — headers HTTP seguros
+- **CORS** — orígenes configurables via `ALLOWED_ORIGINS`
+- **Rate Limiting** — login: 5 intentos/15min · pay: 3/min (Redis distribuido)
+- **Idempotencia** — previene requests duplicados en operaciones críticas
+- **IoT API Key** — header `X-IoT-Api-Key` requerido en endpoints IoT
+- **Bcrypt** — contraseñas hasheadas (salt rounds 10)
+- **Auditoría** — todos los eventos importantes se registran en `audit_logs`
 
-- **Helmet**: Headers HTTP seguros
-- **CORS**: Control de orígenes permitidos
-- **Rate Limiting**: Máximo 5 intentos de login cada 15 minutos
-- **Sanitización NoSQL**: Prevención de inyección NoSQL
-- **Validación de datos**: Express-validator en todas las entradas
-- **JWT**: Tokens con expiración de 24 horas
-- **Bcrypt**: Encriptación de contraseñas con salt rounds de 10
-
-### Recomendaciones para Producción
-
-1. **Variables de entorno seguras**: 
-   - Usar secreto JWT aleatorio y complejo
-   - Especificar orígenes CORS exactos (no usar `*`)
-
-2. **HTTPS**: 
-   - Forzar HTTPS en producción
-   - Usar certificados SSL válidos
-
-3. **MongoDB**:
-   - Usar MongoDB Atlas o servidor dedicado
-   - Configurar replica sets
-   - Backups automáticos diarios
-
-4. **Monitoreo**:
-   - Revisar logs regularmente
-   - Configurar alertas de errores
+---
 
 ## 📁 Estructura del Proyecto
 
@@ -308,86 +209,110 @@ db.users.updateOne(
 TesisProyect/
 ├── src/
 │   ├── config/
-│   │   ├── constants.js       # Constantes centralizadas
-│   │   └── logger.js          # Configuración de Winston
+│   │   ├── constants.js          # Roles, tarifas, solvencia
+│   │   ├── database.js           # Conexión Sequelize/PostgreSQL
+│   │   ├── logger.js             # Winston
+│   │   ├── swagger.js            # OpenAPI 3.0 spec
+│   │   └── redis/                # Caché, rate limit, idempotencia
 │   ├── controllers/
-│   │   ├── authController.js  # Lógica de autenticación
-│   │   └── parkingController.js # Lógica de parqueo
+│   │   ├── auth/                 # register, login, google, profile, token
+│   │   ├── parking/              # assignment, payment, query, admin, solvency
+│   │   ├── iot/                  # lpr.controller
+│   │   ├── invoiceController.js
+│   │   └── healthController.js
 │   ├── middleware/
-│   │   ├── authMiddleware.js  # Verificación JWT
-│   │   ├── authorize.js       # Autorización por roles
-│   │   └── errorHandler.js    # Manejo centralizado de errores
+│   │   ├── authMiddleware.js     # JWT protect
+│   │   ├── roleMiddleware.js     # authorize(roles)
+│   │   ├── solvencyMiddleware.js # checkSolvency
+│   │   ├── iotAuthMiddleware.js  # validateIotApiKey
+│   │   ├── rateLimitMiddleware.js
+│   │   ├── idempotencyMiddleware.js
+│   │   └── errorHandler.js
 │   ├── models/
-│   │   ├── user.js           # Modelo de usuario
-│   │   └── ParkingLot.js     # Modelo de parqueo
+│   │   ├── user.js               # isSolvent, solvencyExpires incluidos
+│   │   ├── ParkingLot.js         # location como JSONB
+│   │   ├── ParkingSpace.js
+│   │   ├── PricingPlan.js
+│   │   ├── Invoice.js
+│   │   ├── AuditLog.js
+│   │   └── index.js
 │   ├── routes/
-│   │   ├── authRoutes.js     # Rutas de autenticación
-│   │   └── parkingRoutes.js  # Rutas de parqueo
+│   │   ├── authRoutes.js
+│   │   ├── parkingRoutes.js      # incluye rutas de solvencia
+│   │   ├── iotRoutes.js
+│   │   ├── invoiceRoutes.js
+│   │   └── healthRoutes.js
+│   ├── services/
+│   │   ├── mqttService.js        # MQTT (modo simulación)
+│   │   └── socketService.js      # Socket.io tiempo real
 │   └── utils/
-│       └── ApiError.js        # Clase de error personalizada
-├── logs/                      # Logs de la aplicación (generados)
-├── .env                       # Variables de entorno (NO versionar)
-├── .env.example              # Plantilla de variables de entorno
-├── .gitignore                # Archivos ignorados por git
-├── package.json              # Dependencias y scripts
-├── seed.js                   # Script de inicialización de DB
-└── server.js                 # Punto de entrada de la aplicación
+│       ├── auditLogger.js
+│       ├── pricingEngine.js
+│       └── tokenUtils.js
+├── seeders/                      # Scripts de datos iniciales
+│   ├── seedUsers.js
+│   ├── seedPricingPlans.js
+│   └── seedParkingLots.js
+├── __tests__/
+│   ├── auth.test.js
+│   └── setup.js
+├── logs/                         # Generado automáticamente
+├── .env                          # Variables locales (NO versionar)
+├── .env.example                  # Plantilla
+├── SWAGGER_GUIDE.md              # Guía de pruebas en Swagger
+├── INSTALL.md                    # Guía de instalación detallada
+├── TESTING.md                    # Guía de testing
+├── VERIFICATION.md               # Lista de verificación
+├── package.json
+└── server.js
 ```
+
+---
 
 ## 🧪 Testing
 
-Actualmente el proyecto no tiene tests automatizados. Se recomienda implementar:
+```bash
+npm test              # Todos los tests
+npm run test:watch    # Modo watch
+npm test -- --coverage  # Con cobertura de código
+```
 
-- Tests unitarios con Jest
-- Tests de integración con Supertest
-- Cobertura mínima del 80%
+---
 
 ## 📝 Scripts Disponibles
 
 ```bash
-npm start        # Iniciar servidor en producción
-npm run dev      # Iniciar servidor en modo desarrollo
-npm run seed     # Inicializar/reiniciar base de datos
+npm start                           # Producción
+npm run dev                         # Desarrollo (nodemon)
+npm test                            # Tests Jest
+node seeders/seedUsers.js           # Poblar usuarios
+node seeders/seedPricingPlans.js    # Poblar planes de precios
+node seeders/seedParkingLots.js     # Poblar lotes de parqueo
 ```
+
+---
 
 ## 🐛 Troubleshooting
 
-### Error: "Variable de entorno MONGODB_URI no definida"
-- Verificar que existe el archivo `.env`
-- Verificar que la variable `MONGODB_URI` está definida en el archivo
+| Error | Causa | Solución |
+|---|---|---|
+| `password authentication failed` | `DB_PASSWORD` incorrecto en `.env` | Corregir contraseña en `.env` |
+| `EADDRINUSE :::3000` | Puerto 3000 ocupado | `taskkill /F /IM node.exe` o cambiar `PORT` |
+| `no existe el tipo «geometry»` | PostGIS no instalado | Ya corregido — ahora usa JSONB |
+| `Redis connection failed` | Redis no está corriendo | Iniciar Memurai: `net start Memurai` |
+| `401 Unauthorized` | Token JWT expirado | Usar `POST /api/auth/refresh` |
+| `402 SOLVENCY_REQUIRED` | Estudiante sin solvencia | Admin debe ejecutar `PUT /api/parking/solvency/:userId` |
 
-### Error: "No autorizado, no se proporcionó token"
-- Verificar que el header `Authorization` está presente
-- Formato correcto: `Authorization: Bearer <token>`
-
-### Error: "Parqueo lleno"
-- Ejecutar `npm run seed` para reiniciar el parqueo
-- O liberar espacios usando `/api/parking/release`
-
-### Error de conexión a MongoDB
-- Verificar que MongoDB está corriendo
-- Verificar la URI de conexión en `.env`
-- Para MongoDB local: `mongodb://localhost:27017/parqueo`
+---
 
 ## 📄 Licencia
 
 ISC
 
-## 👤 Autor
+## 👤 Autora
 
-Carmen Lopez - Proyecto de Tesis
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor:
-
-1. Fork el proyecto
-2. Crear una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abrir un Pull Request
+**Carmen Lopez** — Proyecto de Tesis UMG
 
 ---
 
-**Versión:** 1.0.0  
-**Última actualización:** Noviembre 2025
+**Versión:** 2.0.0 | **Última actualización:** Febrero 2026

@@ -1,6 +1,61 @@
 # 📋 CHANGELOG - Sistema de Gestión de Parqueo
 
+## [2.0.0] - 24 de febrero de 2026
+
+### 💥 Breaking Changes
+
+- **Migración completa de MongoDB → PostgreSQL (Sequelize)**. Todos los modelos, seeders y tests han sido reescritos.
+- `.env` ya no usa `MONGODB_URI`; ahora requiere `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
+- `ParkingLot.location` cambia de tipo `GEOMETRY` (requería PostGIS) a `JSONB` (sin dependencia externa).
+
+### ✨ Nuevas Funcionalidades
+
+#### Sistema de Solvencia
+- ✅ Campos `isSolvent`, `solvencyExpires`, `solvencyUpdatedBy` en el modelo `User`
+- ✅ Middleware `checkSolvency` — bloquea entrada de estudiantes sin solvencia vigente (→ `402`)
+- ✅ `PUT /api/parking/solvency/:userId` — admin/guard marca solvencia por N meses
+- ✅ `GET /api/parking/solvency/:cardId` — consultar solvencia por carné
+- ✅ `GET /api/parking/solvency-report` — reporte general (solo admin)
+
+#### IoT — Autenticación por API Key
+- ✅ `iotAuthMiddleware.js` — valida header `X-IoT-Api-Key`
+- ✅ `POST /api/iot/lpr/event` protegido con la nueva clave `IOT_API_KEY` del `.env`
+
+#### Swagger UI
+- ✅ Habilitado en `/api-docs` (OpenAPI 3.0)
+- ✅ `SWAGGER_GUIDE.md` con flujos de prueba paso a paso
+
+#### Otras Mejoras
+- ✅ Validación de pago obligatoria en `POST /api/parking/release` (→ `402` si no pagó)
+- ✅ `admin.controller.js` — gestión manual de asignación/liberación por guard/admin
+- ✅ `initPricingPlans.js` migrado a Sequelize (`findOne({ where: { code } })`)
+- ✅ `database.js` ahora prioriza variables `DB_*` sobre `DATABASE_URL`
+
+### 🔧 Archivos Modificados
+
+- **Modelos:** `AuditLog.js` (Mongoose → Sequelize), `ParkingLot.js` (GEOMETRY → JSONB), `user.js` (campos solvencia)
+- **Seeders:** `seedUsers`, `seedPricingPlans`, `seedParkingLots`, `updateCoordinates`, `resetStudentPassword`, `createStudentUser`, `checkData`
+- **Tests:** `__tests__/auth.test.js`, `__tests__/setup.js` (Mongoose → Sequelize)
+- **Rutas:** `parkingRoutes.js` (nuevas rutas solvencia + IoT), `iotRoutes.js` (IoT auth)
+- **Docs:** `README.md`, `INSTALL.md`, `VERIFICATION.md`, `TESTING.md`, `QUICKSTART.md`
+
+### 🗑️ Eliminado
+
+- Dependencia `mongoose` eliminada del código (ya no se importa en ningún archivo)
+- Dependencia `mongodb` eliminada (driver directo)
+- Variable `MONGODB_URI` ya no se utiliza
+- `.env` eliminado del tracking de Git
+
+### 🔒 Seguridad
+
+- `IOT_API_KEY` — nueva variable de entorno para autenticar dispositivos IoT
+- `DB_PASSWORD` nunca expuesta en el repositorio (`.env` excluido de Git)
+
+---
+
 ## [1.1.0] - 12 de enero de 2026
+
+
 
 ### ✨ Nuevas Funcionalidades
 
