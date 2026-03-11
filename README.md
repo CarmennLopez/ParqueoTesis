@@ -15,7 +15,7 @@ Sistema empresarial de gestión de parqueo desarrollado con **Node.js**, **Expre
 
 - **Runtime**: Node.js v18+
 - **Framework**: Express.js
-- **ORM**: Sequelize (PostgreSQL)
+- **ORM / DB**: Sequelize con PostgreSQL + **PostGIS** (Extensión espacial obligatoria)
 - **Caché / NoSQL**: Redis
 - **Protocolos**: HTTP, WebSockets, MQTT (IoT)
 - **Documentación**: Swagger / OpenAPI 3.0
@@ -27,7 +27,7 @@ Sistema empresarial de gestión de parqueo desarrollado con **Node.js**, **Expre
    npm install
    ```
 
-2. **Configurar Base de Datos**: Asegúrate de tener PostgreSQL y Redis activos. Crea el archivo `.env` siguiendo el ejemplo:
+2. **Configurar Base de Datos**: Asegúrate de tener PostgreSQL (con la extensión **PostGIS** instalada) y Redis activos. Crea el archivo `.env` siguiendo el ejemplo:
    ```env
    DATABASE_URL=postgres://usuario:password@localhost:5432/parking_db
    REDIS_URL=redis://localhost:6379
