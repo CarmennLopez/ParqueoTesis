@@ -21,16 +21,14 @@ npm run docker:up
 
 ### 4. Crear Datos de Prueba
 ```bash
-# Esperar a que PostgreSQL y Redis inicien correctamente
-docker-compose exec api node seeders/seedUsers.js
-docker-compose exec api node seeders/seedPricingPlans.js
-docker-compose exec api node seeders/seedParkingLots.js
+# Esperar 10 segundos para que MongoDB inicie
+docker-compose exec api npm run seed:all
 ```
 
 ### 5. Verificar que Funciona
 ```bash
-curl http://localhost:3000/health
-# Respuesta esperada: {"status":"OK",...}
+curl http://localhost:3000/health/liveness
+# Respuesta esperada: {"status":"UP"}
 ```
 
 ✅ **¡Listo! Sistema en funcionamiento.**
@@ -200,4 +198,4 @@ Para más información:
 
 ---
 
-**Última actualización**: Febrero 2026 (v2.0 — PostgreSQL/Sequelize)
+**Última actualización**: 12 de enero de 2026

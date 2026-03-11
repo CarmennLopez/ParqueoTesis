@@ -1,236 +1,220 @@
-# 📦 Guía de Instalación — Sistema de Parqueo UMG v2.0
-
-**Stack:** Node.js + Express 5 + PostgreSQL + Sequelize + Redis + Socket.io
-
----
+# Guía de Instalación: Entorno de Desarrollo Local UMG
 
 ## 📋 Prerequisitos
 
-| Herramienta | Versión | Para qué se usa |
-|---|---|---|
-| Node.js | 18+ | Runtime del servidor |
-| PostgreSQL | 14+ | Base de datos principal |
-| Redis / Memurai | 6+ | Caché, rate limiting, sesiones |
-| Git | Cualquiera | Control de versiones |
-| npm | 8+ | Gestor de paquetes |
+- **Node.js:** v18 o superior
+- **Windows 10/11** con PowerShell
+- **Git:** Para control de versiones
+- **VS Code:** (Recomendado)
 
 ---
 
-## 🗄️ Paso 1: Instalar PostgreSQL
+## 🔧 Paso 1: Instalar MongoDB Local
 
-### Descarga
-- Instalador oficial: https://www.postgresql.org/download/windows/
-- Versión recomendada: **PostgreSQL 15 o 16**
+### Opción A: Instalador Oficial (Recomendado)
 
-### Durante la instalación
-- ✅ Habilitar **pgAdmin 4** (GUI visual)
-- ✅ Habilitar **Stack Builder** (para extensiones)
-- Puerto por defecto: **5432**
-- Apuntar la contraseña del usuario `postgres` — la necesitarás en el `.env`
+1. Descargar MongoDB Community Server desde:
+   - https://www.mongodb.com/try/download/community
+   - Versión: **7.0 o superior**
+   - OS: **Windows**
 
-### Crear la base de datos
+2. Ejecutar instalador:
+   - ✅ Instalar como servicio de Windows
+   - ✅ Incluir MongoDB Compass (GUI opcional)
+   - Directorio de datos: `C:\data\db`
 
-Abre **pgAdmin 4** o ejecuta en PowerShell:
-
+3. Verificar instalación:
 ```powershell
-# Abrir psql
-psql -U postgres
+# Abrir PowerShell como Administrador
+mongod --version
+# Debe mostrar: db version v7.x.x
 
-# Dentro de psql:
-CREATE DATABASE parking_db;
-\q
+# El servicio debe estar corriendo automáticamente
+# Verificar en Servicios de Windows: MongoDB Server
 ```
 
-### Verificar conexión
+### Opción B: Chocolatey (Instalador de paquetes)
 
 ```powershell
-psql -U postgres -d parking_db -c "SELECT version();"
-# Debe mostrar la versión de PostgreSQL instalada
+# Si tienes Chocolatey instalado
+choco install mongodb
+
+# Crear directorio de datos
+New-Item -Path C:\data\db -ItemType Directory -Force
+
+# Iniciar MongoDB manualmente
+mongod --dbpath C:\data\db
+```
+
+### Verificar Conexión
+
+```powershell
+# Abrir MongoDB Shell
+mongosh
+
+# Deberías ver:
+# Current Mongosh Log ID: ...
+# Connecting to: mongodb://127.0.0.1:27017/?directConnection=true
+
+# Salir
+exit
 ```
 
 ---
 
 ## 💾 Paso 2: Instalar Redis (Memurai para Windows)
 
-Redis no tiene soporte oficial en Windows. Usamos **Memurai** (compatible 100% con Redis).
+Redis no tiene soporte oficial para Windows, usaremos **Memurai** (fork compatible 100% con Redis).
 
-### Descargar Memurai
-- https://www.memurai.com/get-memurai
-- Versión: **Developer Edition (Gratis)**
-- Instalar como servicio de Windows (puerto **6379**)
+### Opción A: Instalador Memurai (Recomendado)
 
-### Verificar
+1. Descargar Memurai Developer desde:
+   - https://www.memurai.com/get-memurai
+   - Versión: **Developer Edition (Gratis)**
 
+2. Ejecutar instalador:
+   - ✅ Instalar como servicio de Windows
+   - Puerto por defecto: **6379**
+
+3. Verificar instalación:
 ```powershell
+# Abrir PowerShell
 memurai-cli ping
 # Debe retornar: PONG
-```
 
-### Alternativa: Redis en WSL2
-
-```bash
-# Desde WSL2 Ubuntu
-sudo apt update && sudo apt install redis-server
-sudo service redis-server start
+# O si instalaste con nombre redis-cli:
 redis-cli ping
 ```
+
+### Opción B: Chocolatey
+
+```powershell
+choco install memurai-developer
+
+# Verificar
+memurai-cli ping
+```
+
+### Opción C: Redis en WSL2 (Avanzado)
+
+Si prefieres Redis nativo:
+```bash
+# Desde WSL2 Ubuntu
+sudo apt update
+sudo apt install redis-server
+sudo service redis-server start
+
+# Verificar
+redis-cli ping
+```
+
+> **Nota:** Si usas WSL2, cambiar en `.env`: `REDIS_URL=redis://localhost:6379` (funcionará si WSL está configurado para exponer puertos)
 
 ---
 
 ## 📦 Paso 3: Configurar el Proyecto
 
-### Clonar el repositorio
-
+### Clonar el repositorio (si aplica)
 ```powershell
-git clone https://github.com/CarmennLopez/ParqueoTesis.git
-cd ParqueoTesis
+cd C:\Users\azuce\OneDrive\Escritorio
+git clone <tu-repo-url> TesisProyect
+cd TesisProyect
 ```
 
 ### Instalar dependencias Node.js
-
 ```powershell
 npm install
 ```
 
 ### Crear archivo `.env`
 
+Copiar `.env.example` a `.env`:
 ```powershell
 Copy-Item .env.example .env
-notepad .env   # Editar con tus valores reales
 ```
 
-### Configuración completa del `.env`
-
-```env
-# =============================================
-# BASE DE DATOS POSTGRESQL
-# =============================================
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=parking_db
-DB_USER=postgres
-DB_PASSWORD=tu_contraseña_de_postgres
-
-# =============================================
-# SERVIDOR
-# =============================================
-PORT=3000
+Editar `.env` con tus valores locales:
+```bash
+# .env (Desarrollo Local)
 NODE_ENV=development
+PORT=3000
 
-# =============================================
-# AUTENTICACIÓN JWT
-# =============================================
-JWT_SECRET=genera_una_clave_aleatoria_de_minimo_32_chars
-JWT_EXPIRATION=1h
-JWT_REFRESH_EXPIRATION=7d
+# MongoDB Local
+MONGODB_URI=mongodb://localhost:27017/parqueo_umg
 
-# =============================================
-# REDIS
-# =============================================
+# Redis Local
 REDIS_URL=redis://localhost:6379
-REDIS_HOST=localhost
-REDIS_PORT=6379
 
-# =============================================
-# SEGURIDAD
-# =============================================
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4200,http://localhost:8100
-IOT_API_KEY=iot-dev-key-umg-parking-2026
+# JWT (Cambiar en producción)
+JWT_SECRET=umg_parking_dev_secret_2025
+JWT_EXPIRATION=15m
+JWT_REFRESH_EXPIRATION=30d
 
-# =============================================
-# CONFIGURACIÓN DE PARQUEO
-# =============================================
-PARKING_LOT_NAME=Parqueo Principal UMG
+# CORS (Permite localhost para desarrollo)
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8100,http://localhost:4200
 
-# =============================================
-# MODOS DE SIMULACIÓN
-# (true = no requiere hardware real)
-# =============================================
+# Simulación IoT
+MQTT_BROKER_URL=mqtt://localhost:1883
 MQTT_SIMULATION_MODE=true
+
+# Simulación FEL
 FEL_SIMULATION_MODE=true
+FEL_PROVIDER=INFILE_GUATEMALA
+
+# Simulación LDAP
 LDAP_SIMULATION_MODE=true
+LDAP_SERVER_URL=ldap://localhost:389
+LDAP_BASE_DN=dc=umg,dc=edu,dc=gt
 
-# =============================================
-# GOOGLE OAUTH (Opcional)
-# =============================================
-# GOOGLE_CLIENT_ID=tu_client_id.apps.googleusercontent.com
-
-# =============================================
-# LOGGING
-# =============================================
+# Logging
 LOG_LEVEL=debug
-LOG_DIR=./logs
 
-# =============================================
-# RATE LIMITING
-# =============================================
-LOGIN_RATE_LIMIT_WINDOW_MS=900000
-LOGIN_RATE_LIMIT_MAX_ATTEMPTS=5
-API_RATE_LIMIT_WINDOW_MS=60000
-API_RATE_LIMIT_MAX_REQUESTS=100
+# Parking Config
+PARKING_LOT_NAME=Parqueo Principal UMG
 ```
 
 ---
 
-## 🌱 Paso 4: Inicializar la Base de Datos
-
-Las tablas se crean **automáticamente** cuando el servidor arranca en modo desarrollo gracias a `sequelize.sync({ alter: true })`.
-
-Si quieres poblar datos de prueba:
+## 🌱 Paso 4: Poblar Base de Datos (Seeding)
 
 ```powershell
-# Usuarios de prueba (admin, guard, faculty, student, visitor)
-node seeders/seedUsers.js
-
-# Planes de precios (STANDARD_HOURLY, FACULTY_MONTHLY, etc.)
-node seeders/seedPricingPlans.js
-
-# Lotes de parqueo con espacios
-node seeders/seedParkingLots.js
+# Ejecutar el script de semillas
+npm run seed
 ```
 
-**Usuarios creados por seedUsers.js:**
-
-| Rol | Email | Contraseña |
-|---|---|---|
-| admin | admin@umg.edu.gt | Admin@12345 |
-| guard | guard@umg.edu.gt | Guard@12345 |
-| faculty | juan.perez@umg.edu.gt | Faculty@12345 |
-| student | carlos.lopez@estudiante.umg.edu.gt | Student@12345 |
-| visitor | maria.garcia@external.com | Visitor@12345 |
+Esto creará:
+- ✅ Usuarios de prueba (estudiante, catedrático, admin)
+- ✅ Lote de parqueo con espacios inicial
+- ✅ Datos de ejemplo
 
 ---
 
 ## 🚀 Paso 5: Iniciar el Servidor
 
-### Modo desarrollo (con auto-reload)
-
+### Desarrollo (con auto-reload)
 ```powershell
 npm run dev
 ```
 
-### Salida esperada al arrancar correctamente
-
+### Producción Local
+```powershell
+npm start
 ```
-🔧 MQTT Service iniciado en MODO SIMULACIÓN
-🚀 INICIANDO API DE PARQUEO...
-📍 URL BASE: /api/parking
-📍 AMBIENTE: development
-🔗 Conectando a Redis/Memurai...
-✅ Redis conectado y listo
-✅ Conexión a PostgreSQL establecida correctamente.
-🔄 Modelos sincronizados con la base de datos.
+
+Deberías ver:
+```
 🚀 Servidor escuchando en http://localhost:3000
-📌 Socket.io listo para conexiones
+✅ Conectado a la base de datos de MongoDB
+📝 Modo: development
 ```
 
 ---
 
 ## ✅ Verificar Instalación
 
-### Health Check
-
+### Test 1: Health Check
 ```powershell
+# En navegador o con curl/Invoke-WebRequest
 curl http://localhost:3000/health
 ```
 
@@ -238,132 +222,141 @@ Respuesta esperada:
 ```json
 {
   "status": "OK",
-  "timestamp": "2026-02-24T20:00:00.000Z",
-  "uptime": 15,
-  "services": { "database": "connected", "redis": "connected" }
+  "uptime": 12.345,
+  "timestamp": 1732676400000,
+  "environment": "development"
 }
 ```
 
-### Swagger UI
-
-Abre en el navegador: **http://localhost:3000/api-docs**
-
-Debes ver la interfaz interactiva de Swagger con todos los endpoints.
-
-### Test de Login
-
+### Test 2: Endpoint de Bienvenida
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:3000/api/auth/login" `
-  -Method POST `
-  -ContentType "application/json" `
-  -Body '{"email":"admin@umg.edu.gt","password":"Admin@12345"}'
+curl http://localhost:3000/
 ```
 
-Respuesta esperada: JSON con `accessToken` y `refreshToken`.
+Respuesta:
+```json
+{
+  "message": "¡API de parqueo funcionando!",
+  "version": "1.0.0",
+  "status": "active",
+  "endpoints": {
+    "auth": "/api/auth",
+    "parking": "/api/parking",
+    "health": "/health"
+  }
+}
+```
+
+### Test 3: Login de Prueba
+```powershell
+# Usar Postman, Insomnia, o curl
+curl -X POST http://localhost:3000/api/auth/login `
+  -H "Content-Type: application/json" `
+  -d '{
+    "email": "admin@umg.edu.gt",
+    "password": "Admin2025!"
+  }'
+```
 
 ---
 
 ## 🛠️ Herramientas Recomendadas
 
-### pgAdmin 4 (GUI para PostgreSQL)
-- Incluido en el instalador de PostgreSQL
-- Explorar tablas, ejecutar SQL, ver datos
-- URL: http://localhost:5050 (si instalado como servidor)
+### MongoDB Compass (GUI)
+- Explorar base de datos visualmente
+- Ejecutar queries manualmente
+- Crear índices
+- Descargar: https://www.mongodb.com/products/compass
 
 ### Redis Commander (GUI para Redis)
 ```powershell
+# Instalar globalmente
 npm install -g redis-commander
+
+# Iniciar
 redis-commander --redis-port 6379
-# Abrir: http://localhost:8081
+
+# Abrir en navegador: http://localhost:8081
 ```
 
-### Swagger UI (incluido en el proyecto)
-- **http://localhost:3000/api-docs**
-- Prueba todos los endpoints con interfaz visual
-- Ver `SWAGGER_GUIDE.md` para flujos de prueba
-
-### DBeaver / TablePlus
-- Clientes SQL multiplataforma para PostgreSQL
-- Útiles para inspeccionar tablas y datos
+### Postman / Insomnia
+- Probar endpoints API
+- Guardar colecciones de requests
+- Scripts de automatización
 
 ---
 
 ## 🐛 Solución de Problemas
 
-### Error: `password authentication failed for user "postgres"`
-```
-Causa: DB_PASSWORD incorrecto en .env
-Solución: Verificar la contraseña del usuario postgres en PostgreSQL
-```
+### MongoDB no inicia
 
-### Error: `EADDRINUSE: address already in use :::3000`
+**Error:** `MongoNetworkError: connect ECONNREFUSED 127.0.0.1:27017`
+
+**Solución:**
 ```powershell
-# Identificar proceso usando el puerto 3000
-netstat -ano | findstr :3000
+# Verificar servicio de Windows
+Get-Service MongoDB
 
-# Terminar el proceso (reemplazar <PID>)
-taskkill /PID <PID> /F
+# Si está detenido, iniciarlo
+Start-Service MongoDB
 
-# O cambiar el puerto en .env:
-PORT=3001
+# O manualmente:
+mongod --dbpath C:\data\db
 ```
 
-### Error: Redis `ECONNREFUSED 127.0.0.1:6379`
+### Redis/Memurai no responde
+
+**Error:** `Error: Redis connection to localhost:6379 failed`
+
+**Solución:**
 ```powershell
-# Verificar si Memurai está corriendo
+# Verificar servicio
 Get-Service Memurai
 
 # Iniciar si está detenido
 Start-Service Memurai
 
 # Verificar puerto
-redis-cli ping
+netstat -ano | findstr :6379
 ```
 
-### Error: `no existe el tipo «geometry»`
-```
-Causa: Versión antigua del modelo ParkingLot.js con DataTypes.GEOMETRY
-Estado: YA CORREGIDO — ahora usa DataTypes.JSONB (no requiere PostGIS)
-Solución: Asegúrate de estar usando la versión actualizada del código
-```
+### Puerto 3000 en uso
 
-### Tablas no se crean / Error de sincronización
+**Error:** `EADDRINUSE: address already in use :::3000`
+
+**Solución:**
 ```powershell
-# Verificar que la BD existe
-psql -U postgres -c "\l" | Select-String "parking_db"
+# Encontrar proceso usando puerto 3000
+netstat -ano | findstr :3000
 
-# Si no existe, crearla:
-psql -U postgres -c "CREATE DATABASE parking_db;"
+# Matar proceso (reemplazar <PID> con el número de la última columna)
+taskkill /PID <PID> /F
 
-# Reiniciar el servidor para que Sequelize las cree automáticamente
-npm run dev
-```
-
-### Error: `Module not found`
-```powershell
-# Reinstalar dependencias
-Remove-Item node_modules -Recurse -Force
-npm install
+# O cambiar puerto en .env
+PORT=3001
 ```
 
 ---
 
-## 📚 Siguiente Paso
+## 📚 Próximos Pasos
 
-Con el servidor corriendo:
+Una vez verificada la instalación:
 
-1. **Abre Swagger UI**: http://localhost:3000/api-docs
-2. **Lee la guía**: [`SWAGGER_GUIDE.md`](./SWAGGER_GUIDE.md)
-3. **Flujo básico de prueba**:
-   - `POST /api/auth/login` con admin@umg.edu.gt
-   - Autoriza en Swagger con el token
-   - `GET /api/parking/lots` → ver parqueos
-   - `POST /api/parking/assign` → entrar
-   - `POST /api/parking/pay` → pagar
-   - `POST /api/parking/release` → salir
+1. **Explorar la API** con Postman usando los ejemplos del `README.md`
+2. **Revisar logs** en `./logs/` para entender el flujo
+3. **Estudiar el código** empezando por `server.js` → `routes` → `controllers`
+4. **Comenzar Fase 1** del plan de modernización
 
 ---
 
-**¿Todo funcionando?** ✅ El sistema está listo para usar 🚀
+## 🔗 Referencias Útiles
 
-**Versión:** 2.0.0 | **Última actualización:** Febrero 2026
+- **Documentación MongoDB:** https://www.mongodb.com/docs/manual/
+- **Documentación Redis:** https://redis.io/docs/
+- **Memurai Docs:** https://docs.memurai.com/
+- **Node.js Best Practices:** https://github.com/goldbergyoni/nodebestpractices
+- **Express.js Guide:** https://expressjs.com/en/guide/routing.html
+
+---
+
+**¿Todo funcionando?** ✅ Estás listo para comenzar el desarrollo enterprise 🚀
