@@ -1,6 +1,23 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ParkingLot:
+ *       type: object
+ *       properties:
+ *         id: { type: integer }
+ *         name: { type: string }
+ *         totalSpaces: { type: integer }
+ *         availableSpaces: { type: integer }
+ *         location:
+ *           type: object
+ *           properties:
+ *             type: { type: string, example: "Point" }
+ *             coordinates: { type: array, items: { type: number }, example: [-90.5, 14.6] }
+ */
 const ParkingLot = sequelize.define('ParkingLot', {
   id: {
     type: DataTypes.INTEGER,
@@ -12,13 +29,11 @@ const ParkingLot = sequelize.define('ParkingLot', {
     allowNull: false,
     unique: true
   },
-  // Ubicación almacenada como GeoJSON (no requiere PostGIS)
-  // Formato esperado: { type: "Point", coordinates: [lng, lat] }
+  // PostGIS: Location stored as a Geometry Point
   location: {
-    type: DataTypes.JSONB,
-    allowNull: true
+    type: DataTypes.GEOMETRY('POINT', 4326), // SRID 4326 for standard GPS coords
+    allowNull: false
   },
-
   totalSpaces: {
     type: DataTypes.INTEGER,
     allowNull: false,
