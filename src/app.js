@@ -1,8 +1,8 @@
 const express = require('express');
+require('dotenv').config();
 const helmet = require('helmet');
 const cors = require('cors');
 const compression = require('compression');
-const dotenv = require('dotenv');
 
 const parkingRoutes = require('./routes/parkingRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -13,10 +13,10 @@ const iotRoutes = require('./routes/iotRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const versionMiddleware = require('./middleware/versionMiddleware');
 const idempotency = require('./middleware/idempotencyMiddleware');
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpecs = require('./config/swagger');
+// const swaggerUi = require('swagger-ui-express');
+// const swaggerSpecs = require('./config/swagger');
 
-dotenv.config();
+// Middlewares
 
 const app = express();
 
@@ -29,7 +29,19 @@ console.log('-------------------------------------------');
 // Security & Optimization
 app.use(helmet());
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+    origin: (origin, callback) => {
+        const allowed = [
+            'http://localhost:4200',
+            'http://localhost:5000',
+            'http://localhost:8100',
+            'http://127.0.0.1:4200'
+        ];
+        if (!origin || allowed.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
     credentials: true,
     optionsSuccessStatus: 200
 }));
@@ -37,10 +49,16 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./config/swagger');
+
 // Middlewares
 app.use(versionMiddleware);
 app.use('/health', healthRoutes); // High priority
 app.use(idempotency);
+
+// Swagger
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // Routes
 app.get('/', (req, res) => {
@@ -57,8 +75,8 @@ app.use('/api/parking', parkingRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/iot', iotRoutes);
 
-// Swagger UI — Documentación interactiva disponible en /api-docs
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+// Swagger (Can be moved to separate file if needed)
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // Error Handling
 app.use((req, res) => res.status(404).json({ message: `Ruta no encontrada: ${req.originalUrl}` }));

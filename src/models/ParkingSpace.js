@@ -3,6 +3,20 @@ const { sequelize } = require('../config/database');
 const ParkingLot = require('./ParkingLot');
 const User = require('./user'); // Para relación de ocupación
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ParkingSpace:
+ *       type: object
+ *       properties:
+ *         id: { type: integer }
+ *         spaceNumber: { type: string }
+ *         isOccupied: { type: boolean }
+ *         parkingLotId: { type: integer }
+ *         occupiedByUserId: { type: integer, nullable: true }
+ *         entryTime: { type: string, format: date-time, nullable: true }
+ */
 const ParkingSpace = sequelize.define('ParkingSpace', {
     id: {
         type: DataTypes.INTEGER,

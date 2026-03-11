@@ -26,7 +26,7 @@ redisClient.on('reconnecting', (time) => logger.info(`🔄 Reconectando a Redis 
 
 async function connect() {
     try { await redisClient.connect(); logger.info('Cliente Redis inicializado'); }
-    catch (error) { logger.error('Fallo al conectar Redis:', error.message); throw error; }
+    catch (error) { logger.error('Fallo al conectar Redis:', error.message); /* throw error; */ }
 }
 
 async function disconnect() {

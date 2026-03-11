@@ -1,25 +1,25 @@
 /**
- * seedUsers.js - Seeder para crear usuarios de prueba (PostgreSQL/Sequelize)
+ * seedUsers.js - Seeder para crear usuarios de prueba
  * Ejecutar con: node seeders/seedUsers.js
  */
 
+const { connect } = require('mongoose');
 const dotenv = require('dotenv');
-dotenv.config();
-
-const { sequelize } = require('../src/config/database');
 const User = require('../src/models/user');
 const { USER_ROLES } = require('../src/config/constants');
 
+dotenv.config();
+
 const seedUsers = async () => {
   try {
-    await sequelize.authenticate();
-    console.log('✅ Conectado a PostgreSQL');
+    await connect(process.env.MONGODB_URI);
+    console.log('✅ Conectado a MongoDB');
 
     // Verificar si ya existen usuarios
-    const count = await User.count();
-    if (count > 0) {
-      console.log(`⚠️  Ya existen ${count} usuarios en la BD. Limpiando...`);
-      await User.destroy({ where: {}, truncate: true, cascade: true });
+    const existingUsers = await User.find();
+    if (existingUsers.length > 0) {
+      console.log(`⚠️  Ya existen ${existingUsers.length} usuarios en la BD. Limpiando...`);
+      await User.deleteMany({});
     }
 
     // Usuarios de prueba
@@ -29,7 +29,7 @@ const seedUsers = async () => {
         email: 'admin@umg.edu.gt',
         password: 'Admin@12345',
         cardId: 'ADMIN001',
-        vehiclePlate: 'ADMIN01',
+        vehiclePlate: 'ADMIN-01',
         role: USER_ROLES.ADMIN,
         nit: '1234567-8',
         fiscalAddress: 'Campus Central UMG'
@@ -39,7 +39,7 @@ const seedUsers = async () => {
         email: 'guard@umg.edu.gt',
         password: 'Guard@12345',
         cardId: 'GUARD001',
-        vehiclePlate: 'GUARD01',
+        vehiclePlate: 'GUARD-01',
         role: USER_ROLES.GUARD,
         nit: 'CF'
       },
@@ -74,11 +74,11 @@ const seedUsers = async () => {
       }
     ];
 
-    // Crear usuarios de uno en uno para que el hook beforeSave haga el hash del password
+    // Crear usuarios usando create() para que se ejecute el pre-save hook de Mongoose (hashing de password)
     const createdUsers = [];
-    for (const userData of testUsers) {
-      const user = await User.create(userData);
-      createdUsers.push(user);
+    for (const user of testUsers) {
+      const newUser = await User.create(user);
+      createdUsers.push(newUser);
     }
 
     console.log('\n🎉 Seeding de usuarios completado:');
@@ -95,9 +95,11 @@ const seedUsers = async () => {
     console.error('❌ Error en seeding de usuarios:', error.message);
     process.exit(1);
   } finally {
-    await sequelize.close();
-    console.log('\n🔌 Desconectado de PostgreSQL');
-    process.exit(0);
+    if (require('mongoose').connection.readyState === 1) {
+      await require('mongoose').disconnect();
+      console.log('\n🔌 Desconectado de MongoDB');
+    }
+    process.exit();
   }
 };
 

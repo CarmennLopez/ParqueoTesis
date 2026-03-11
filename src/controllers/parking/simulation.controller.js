@@ -27,12 +27,34 @@ const simulateFill = asyncHandler(async (req, res) => {
 
 const simulateEmpty = asyncHandler(async (req, res) => {
     const { parkingLotId } = req.body;
-    await ParkingSpace.update(
-        { isOccupied: false, occupiedByUserId: null, entryTime: null },
-        { where: { parkingLotId } }
-    );
-    await deleteCache(CACHE_KEY_STATUS + parkingLotId);
-    res.json({ message: 'Emptied lot' });
+    const t = await sequelize.transaction();
+    try {
+        // Clear User assignments for this lot
+        await User.update(
+            { currentParkingLotId: null, currentParkingSpace: null, entryTime: null },
+            { where: { currentParkingLotId: parkingLotId }, transaction: t }
+        );
+
+        // Clear ParkingSpace assignments
+        await ParkingSpace.update(
+            { isOccupied: false, occupiedByUserId: null, entryTime: null },
+            { where: { parkingLotId }, transaction: t }
+        );
+
+        // Update ParkingLot availableSpaces count
+        const lot = await ParkingLot.findByPk(parkingLotId, { transaction: t });
+        if (lot) {
+            lot.availableSpaces = lot.totalSpaces;
+            await lot.save({ transaction: t });
+        }
+
+        await t.commit();
+        await deleteCache(CACHE_KEY_STATUS + parkingLotId);
+        res.json({ message: 'Emptied lot and cleared user assignments' });
+    } catch (error) {
+        if (t) await t.rollback();
+        throw error;
+    }
 });
 
 const openGate = asyncHandler(async (req, res) => {

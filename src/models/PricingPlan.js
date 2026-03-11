@@ -1,6 +1,21 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     PricingPlan:
+ *       type: object
+ *       properties:
+ *         id: { type: integer }
+ *         code: { type: string }
+ *         name: { type: string }
+ *         type: { type: string, enum: [HOURLY, FLAT_FEE, SUBSCRIPTION] }
+ *         baseRate: { type: number }
+ *         currency: { type: string, enum: [GTQ, USD] }
+ *         billingInterval: { type: string, enum: [HOUR, DAY, MONTH, ONE_TIME] }
+ */
 const PricingPlan = sequelize.define('PricingPlan', {
     id: {
         type: DataTypes.INTEGER,

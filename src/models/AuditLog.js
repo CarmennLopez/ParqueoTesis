@@ -1,5 +1,3 @@
-// src/models/AuditLog.js
-// Modelo Sequelize para registro de auditoría (migrado de Mongoose a PostgreSQL)
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
@@ -9,11 +7,12 @@ const AuditLog = sequelize.define('AuditLog', {
         autoIncrement: true,
         primaryKey: true
     },
-    // WHO: Quién realizó la acción
+    // Usamos nombres directos para evitar confusión con indices/constraints
     userId: {
         type: DataTypes.INTEGER,
-        allowNull: true, // Puede ser null para acciones del sistema o anónimas
+        allowNull: true,
         field: 'user_id'
+        // Eliminamos references temporalmente para asegurar creación limpia
     },
     userRole: {
         type: DataTypes.STRING,
@@ -26,42 +25,42 @@ const AuditLog = sequelize.define('AuditLog', {
         field: 'ip_address'
     },
     userAgent: {
-        type: DataTypes.TEXT,
+        type: DataTypes.STRING,
         allowNull: true,
         field: 'user_agent'
     },
-
-    // WHAT: Qué acción se realizó
     action: {
         type: DataTypes.STRING,
-        allowNull: false
-        // Ejemplos: 'LOGIN', 'OPEN_GATE', 'PAYMENT', 'UPDATE_RATE'
+        allowNull: false,
+        set(val) {
+            if (val) this.setDataValue('action', val.toUpperCase());
+        }
     },
     resource: {
         type: DataTypes.STRING,
         allowNull: false
-        // Ejemplos: 'Auth', 'ParkingLot', 'User', 'System'
     },
     status: {
         type: DataTypes.ENUM('SUCCESS', 'FAILURE', 'WARNING'),
         defaultValue: 'SUCCESS'
     },
-
-    // DETAILS: Metadata adicional del evento (JSONB permite objetos flexibles)
     details: {
         type: DataTypes.JSONB,
         defaultValue: {}
     },
-
-    // WHEN: Cuándo ocurrió
     timestamp: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
-        field: 'timestamp'
+        allowNull: false
     }
 }, {
     tableName: 'audit_logs',
-    timestamps: false // Usamos nuestro propio campo timestamp
+    timestamps: false,
+    indexes: [
+        { fields: ['timestamp'] },
+        { fields: ['action'] },
+        { fields: ['user_id'] }
+    ]
 });
 
 module.exports = AuditLog;

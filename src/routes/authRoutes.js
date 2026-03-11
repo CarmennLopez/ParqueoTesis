@@ -19,7 +19,25 @@ const loginLimiter = rateLimit({
  * /api/auth/register:
  *   post:
  *     tags: [Autenticación]
- *     summary: Registrar usuario
+ *     summary: Registrar un nuevo usuario
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email, password, role]
+ *             properties:
+ *               name: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *               role: { type: string, enum: [student, faculty, visitor, guard, admin] }
+ *               vehiclePlate: { type: string }
+ *     responses:
+ *       201:
+ *         description: Usuario creado exitosamente
+ *       400:
+ *         description: Datos inválidos
  */
 router.post('/register', registerValidation, handleValidationErrors, authController.register);
 
@@ -28,7 +46,30 @@ router.post('/register', registerValidation, handleValidationErrors, authControl
  * /api/auth/login:
  *   post:
  *     tags: [Autenticación]
- *     summary: Iniciar sesión
+ *     summary: Iniciar sesión con credenciales tradicionales
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: Login exitoso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 accessToken: { type: string }
+ *                 user: { type: object }
+ *       401:
+ *         description: Credenciales incorrectas
  */
 router.post('/login', loginLimiter, loginValidation, handleValidationErrors, authController.login);
 
@@ -37,7 +78,10 @@ router.post('/login', loginLimiter, loginValidation, handleValidationErrors, aut
  * /api/auth/refresh:
  *   post:
  *     tags: [Autenticación]
- *     summary: Renovar Access Token
+ *     summary: Refrescar el token de acceso
+ *     responses:
+ *       200:
+ *         description: Nuevo token generado
  */
 router.post('/refresh', authController.refreshToken);
 
@@ -46,7 +90,7 @@ router.post('/refresh', authController.refreshToken);
  * /api/auth/logout:
  *   post:
  *     tags: [Autenticación]
- *     summary: Cerrar sesión
+ *     summary: Cerrar sesión activa
  */
 router.post('/logout', authController.logout);
 
@@ -55,7 +99,25 @@ router.post('/logout', authController.logout);
  * /api/auth/me:
  *   get:
  *     tags: [Autenticación]
- *     summary: Perfil usuario
+ *     summary: Obtener el perfil del usuario autenticado
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Datos del perfil incluyendo estado de parqueo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id: { type: integer }
+ *                 name: { type: string }
+ *                 email: { type: string }
+ *                 role: { type: string }
+ *                 currentParkingLotId: { type: integer }
+ *                 currentParkingSpace: { type: string }
+ *                 currentParkingLot: { type: string }
+ *                 entryTime: { type: string, format: date-time }
  */
 router.get('/me', protect, authController.getMe);
 
@@ -64,14 +126,40 @@ router.get('/me', protect, authController.getMe);
  * /api/auth/google:
  *   post:
  *     tags: [Autenticación]
- *     summary: Login con Google (solo @miumg.edu.gt)
+ *     summary: Autenticación con Google (Social Login)
+ *     description: Solo se permiten correos @miumg.edu.gt
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [idToken]
+ *             properties:
+ *               idToken: { type: string }
+ *     responses:
+ *       200:
+ *         description: Autenticación exitosa
  */
 router.post('/google', googleLogin);
 
 /**
- * @route POST /api/auth/switch-role
- * @desc Cambiar rol de usuario (solo para pruebas)
- * @access Private
+ * @swagger
+ * /api/auth/switch-role:
+ *   post:
+ *     tags: [Autenticación]
+ *     summary: Cambiar el rol del usuario (Solo pruebas/Admin)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [role]
+ *             properties:
+ *               role: { type: string }
  */
 router.post('/switch-role', protect, authController.switchRole);
 

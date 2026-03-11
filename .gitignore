@@ -65,3 +65,6 @@ data/
 # Cache
 .cache/
 .parcel-cache/
+
+# Proyecto anidado
+api-parqueos/

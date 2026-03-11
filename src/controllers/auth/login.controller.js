@@ -20,6 +20,7 @@ const login = asyncHandler(async (req, res) => {
             email: user.email,
             role: user.role,
             hasPaid: user.hasPaid,
+            assignedParkingLotId: user.assignedParkingLotId,
             currentParkingSpace: user.currentParkingSpace,
             accessToken,
             refreshToken

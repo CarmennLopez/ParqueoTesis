@@ -3,22 +3,23 @@
 📝 Prueba 1: Registrar usuario
 Status: 201
 Respuesta: {
-  "_id": "692cb50d5b37a245f8e8b44a",
+  "_id": 4,
   "name": "Usuario Prueba",
   "email": "prueba@test.com",
   "role": "student",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MmNiNTBkNWIzN2EyNDVmOGU4YjQ0YSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzY0NTM3NjEzLCJleHAiOjE3NjQ1Mzg1MTN9.Kd_ZrT0mNaaQrTBFNKVbLuJ667LORxaOYYy8LxxUVak"
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3NzMyMDM0NzEsImV4cCI6MTc3MzIwNDM3MX0._OU0zp95yMz2H3l3YEk830qSLtucjyLKhyIYBUfibRE"
 }
 
 🔐 Prueba 2: Iniciar sesión
 Status: 200
 Respuesta: {
-  "_id": "692cb50d5b37a245f8e8b44a",
+  "_id": 4,
   "name": "Usuario Prueba",
   "email": "prueba@test.com",
   "role": "student",
   "hasPaid": false,
+  "assignedParkingLotId": null,
   "currentParkingSpace": null,
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MmNiNTBkNWIzN2EyNDVmOGU4YjQ0YSIsInJvbGUiOiJzdHVkZW50IiwiaWF0IjoxNzY0NTM3NjEzLCJleHAiOjE3NjQ1Mzg1MTN9.Kd_ZrT0mNaaQrTBFNKVbLuJ667LORxaOYYy8LxxUVak",
-  "refreshToken": "ae56dfee169265d28277bf8d3817a6ff4ded88030346d27f60cec99dec37f8b1f4f653f254c49a32"
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3NzMyMDM0NzEsImV4cCI6MTc3MzIwNDM3MX0._OU0zp95yMz2H3l3YEk830qSLtucjyLKhyIYBUfibRE",
+  "refreshToken": "88844dbe33a801275ae5ca6ec71d83d0106ff2580529039e7b90a3b67ee284f4cd19e33ea0105361"
 }

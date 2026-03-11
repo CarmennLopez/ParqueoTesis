@@ -1,42 +1,31 @@
-/**
- * resetStudentPassword.js - Resetea la contraseña de un usuario (PostgreSQL/Sequelize)
- * Ejecutar con: node seeders/resetStudentPassword.js
- */
-
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-
-const { sequelize } = require('../src/config/database');
+const mongoose = require('mongoose');
 const User = require('../src/models/user');
 
-async function resetPassword() {
-    try {
-        await sequelize.authenticate();
-        console.log('✅ Conectado a PostgreSQL');
+const mongoURI = process.env.MONGODB_URI;
+
+mongoose.connect(mongoURI)
+    .then(async () => {
+        console.log('Connected to DB...');
 
         const email = 'carlos.lopez@estudiante.umg.edu.gt';
         const newPassword = 'Student@12345';
 
-        // Buscar usuario
-        const user = await User.findOne({ where: { email } });
+        // Find user
+        const user = await User.findOne({ email });
 
         if (!user) {
-            console.log('⚠️  Usuario no encontrado:', email);
+            console.log('User not found!');
         } else {
-            // Asignar y guardar — el hook beforeSave hará el hash automáticamente
+            // Update password manually to trigger pre-save hook if implemented like that, 
+            // or just set it. 
+            // In Mongoose, if we set the field and save(), the pre-save hook should run.
             user.password = newPassword;
             await user.save();
-            console.log(`✅ Contraseña para ${email} actualizada exitosamente.`);
+            console.log(`Password for ${email} updated successfully!`);
         }
 
-    } catch (error) {
-        console.error('❌ Error:', error.message);
-        process.exit(1);
-    } finally {
-        await sequelize.close();
-        console.log('✅ Desconectado de PostgreSQL');
-        process.exit(0);
-    }
-}
-
-resetPassword();
+        mongoose.disconnect();
+    })
+    .catch(err => console.error(err));

@@ -14,9 +14,13 @@ const options = {
         },
         servers: [
             {
-                url: 'http://localhost:3000',
-                description: 'Servidor de Desarrollo',
+                url: 'http://localhost:5000',
+                description: 'Servidor Local (Dev)',
             },
+            {
+                url: 'http://192.168.1.104:5000',
+                description: 'Servidor Red Local (Móvil)',
+            }
         ],
         components: {
             securitySchemes: {
@@ -33,7 +37,7 @@ const options = {
             },
         ],
     },
-    apis: ['./src/routes/*.js', './src/models/*.js'], // Archivos donde buscar anotaciones
+    apis: ['./src/routes/**/*.js', './src/models/*.js'], // Archivos locales (recursivo en routes)
 };
 
 const specs = swaggerJsdoc(options);

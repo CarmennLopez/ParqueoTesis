@@ -1,5 +1,5 @@
 // src/scripts/initPricingPlans.js
-// Inicializa planes de precios por defecto en PostgreSQL (via Sequelize)
+const mongoose = require('mongoose');
 const PricingPlan = require('../models/PricingPlan');
 const logger = require('../config/logger');
 
@@ -26,8 +26,7 @@ const defaultPlans = [
         currency: 'GTQ',
         billingInterval: 'MONTH',
         description: 'Acceso ilimitado por un mes.',
-        isActive: true,
-        rules: {}
+        isActive: true
     },
     {
         code: 'FACULTY_SPECIAL',
@@ -48,12 +47,14 @@ const defaultPlans = [
 const initPricingPlans = async () => {
     try {
         for (const plan of defaultPlans) {
-            const exists = await PricingPlan.findOne({ where: { code: plan.code } });
+            const exists = await PricingPlan.findOne({ code: plan.code });
             if (!exists) {
                 await PricingPlan.create(plan);
                 logger.info(`Plan de precios creado: ${plan.name}`);
+            } else {
+                // Opcional: Actualizar si ya existe para asegurar consistencia en dev
+                // await PricingPlan.findOneAndUpdate({ code: plan.code }, plan);
             }
-            // Si ya existe, no se sobreescribe para preservar cambios manuales
         }
         logger.info('Inicialización de planes de precios completada.');
     } catch (error) {

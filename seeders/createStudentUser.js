@@ -1,52 +1,40 @@
-/**
- * createStudentUser.js - Crea o actualiza un usuario estudiante (PostgreSQL/Sequelize)
- * Ejecutar con: node seeders/createStudentUser.js
- */
-
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-
-const { sequelize } = require('../src/config/database');
+const mongoose = require('mongoose');
 const User = require('../src/models/user');
 
-async function createOrUpdateStudent() {
-    try {
-        await sequelize.authenticate();
-        console.log('✅ Conectado a PostgreSQL');
+const mongoURI = process.env.MONGODB_URI;
+
+mongoose.connect(mongoURI)
+    .then(async () => {
+        console.log('Connected to DB...');
 
         const email = 'carlos.lopez@estudiante.umg.edu.gt';
         const password = 'Student@12345';
 
-        // Verificar si el usuario existe
-        let user = await User.findOne({ where: { email } });
+        // Check if user exists
+        let user = await User.findOne({ email });
 
         if (user) {
-            console.log('✅ Usuario encontrado, actualizando contraseña...');
+            console.log('User found, updating password...');
             user.password = password;
-            await user.save(); // El hook beforeSave hashea automáticamente
-            console.log('✅ Contraseña actualizada.');
+            await user.save();
+            console.log('Password updated.');
         } else {
-            console.log('⚠️  Usuario no encontrado, creando...');
-            user = await User.create({
+            console.log('User not found, creating...');
+            user = new User({
                 name: 'Carlos López Estudiante',
-                email,
-                password,
+                email: email,
+                password: password,
                 cardId: 'STU001',
                 vehiclePlate: 'STU0001',
                 role: 'student',
                 nit: 'CF'
             });
-            console.log('✅ Usuario creado exitosamente.');
+            await user.save();
+            console.log('User created successfully.');
         }
 
-    } catch (error) {
-        console.error('❌ Error:', error.message);
-        process.exit(1);
-    } finally {
-        await sequelize.close();
-        console.log('✅ Desconectado de PostgreSQL');
-        process.exit(0);
-    }
-}
-
-createOrUpdateStudent();
+        mongoose.disconnect();
+    })
+    .catch(err => console.error(err));

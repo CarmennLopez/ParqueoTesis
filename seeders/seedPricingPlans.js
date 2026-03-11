@@ -1,27 +1,27 @@
 /**
- * seedPricingPlans.js - Seeder para crear planes de precios (PostgreSQL/Sequelize)
+ * seedPricingPlans.js - Seeder para crear planes de precios
  * Ejecutar con: node seeders/seedPricingPlans.js
  */
 
+const { connect } = require('mongoose');
 const dotenv = require('dotenv');
-dotenv.config();
-
-const { sequelize } = require('../src/config/database');
 const PricingPlan = require('../src/models/PricingPlan');
+
+dotenv.config();
 
 const seedPricingPlans = async () => {
   try {
-    await sequelize.authenticate();
-    console.log('✅ Conectado a PostgreSQL');
+    await connect(process.env.MONGODB_URI);
+    console.log('✅ Conectado a MongoDB');
 
     // Verificar si ya existen planes
-    const count = await PricingPlan.count();
-    if (count > 0) {
-      console.log(`⚠️  Ya existen ${count} planes. Limpiando...`);
-      await PricingPlan.destroy({ where: {} });
+    const existingPlans = await PricingPlan.find();
+    if (existingPlans.length > 0) {
+      console.log(`⚠️  Ya existen ${existingPlans.length} planes. Limpiando...`);
+      await PricingPlan.deleteMany({});
     }
 
-    // Planes de precios
+    // Planes de precios según schema real
     const pricingPlans = [
       {
         code: 'STANDARD_HOURLY',
@@ -83,8 +83,8 @@ const seedPricingPlans = async () => {
       }
     ];
 
-    // Crear planes usando bulkCreate
-    const createdPlans = await PricingPlan.bulkCreate(pricingPlans);
+    // Crear planes
+    const createdPlans = await PricingPlan.insertMany(pricingPlans);
 
     console.log('\n🎉 Seeding de planes de precios completado:');
     createdPlans.forEach(plan => {
@@ -99,9 +99,11 @@ const seedPricingPlans = async () => {
     console.error('❌ Error en seeding de planes:', error.message);
     process.exit(1);
   } finally {
-    await sequelize.close();
-    console.log('🔌 Desconectado de PostgreSQL');
-    process.exit(0);
+    if (require('mongoose').connection.readyState === 1) {
+      await require('mongoose').disconnect();
+      console.log('🔌 Desconectado de MongoDB');
+    }
+    process.exit();
   }
 };
 

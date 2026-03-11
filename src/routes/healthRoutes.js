@@ -12,13 +12,40 @@ const {
  * Usado por load balancers, Kubernetes, y monitoring tools
  */
 
-// Liveness Probe: ¿Está vivo el proceso?
+/**
+ * @swagger
+ * /health/liveness:
+ *   get:
+ *     tags: [Mantenimiento - Health]
+ *     summary: Liveness Probe (¿Está vivo?)
+ *     responses:
+ *       200:
+ *         description: El proceso está vivo
+ */
 router.get('/liveness', livenessProbe);
 
-// Readiness Probe: ¿Puede recibir tráfico?
+/**
+ * @swagger
+ * /health/readiness:
+ *   get:
+ *     tags: [Mantenimiento - Health]
+ *     summary: Readiness Probe (¿Listo para recibir tráfico?)
+ *     responses:
+ *       200:
+ *         description: El servidor está listo y conectado a DB/Redis
+ */
 router.get('/readiness', readinessProbe);
 
-// Health Endpoint estándar (retrocompatibilidad)
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     tags: [Mantenimiento - Health]
+ *     summary: Health Check Estándar
+ *     responses:
+ *       200:
+ *         description: Estado general del sistema
+ */
 router.get('/', standardHealth);
 
 module.exports = router;

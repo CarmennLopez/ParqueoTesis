@@ -1,9 +1,10 @@
 /**
- * __tests__/auth.test.js - Tests para el controlador de autenticación
- * Ejecutar con: npm test o npm run test:auth
+ * Tests para el controlador de autenticación
+ * Ejecutar con: npm test
  */
 
 const request = require('supertest');
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -12,34 +13,35 @@ dotenv.config();
 const createTestApp = () => {
   const express = require('express');
   const app = express();
-
+  
   app.use(express.json());
-
+  
   // Importar rutas
   const authRoutes = require('../src/routes/authRoutes');
   app.use('/api/auth', authRoutes);
-
+  
   return app;
 };
 
 describe('Authentication Controller', () => {
   let app;
+  let connection;
 
   beforeAll(async () => {
-    // Conectar a base de datos de testing (PostgreSQL via Sequelize)
+    // Conectar a base de datos de testing
     try {
-      const { sequelize } = require('../src/config/database');
-      await sequelize.authenticate();
-      console.log('✅ Conectado a PostgreSQL para testing');
+      connection = await mongoose.connect(process.env.MONGODB_URI);
       app = createTestApp();
     } catch (error) {
-      console.error('❌ Error de conexión a PostgreSQL:', error.message);
-      throw error;
+      console.error('Error de conexión a MongoDB:', error);
     }
   });
 
   afterAll(async () => {
-    // La conexión se cierra en setup.js (afterAll global)
+    // Limpiar conexión
+    if (connection) {
+      await mongoose.disconnect();
+    }
   });
 
   describe('POST /api/auth/register', () => {
@@ -49,7 +51,7 @@ describe('Authentication Controller', () => {
         email: `test-${Date.now()}@example.com`,
         password: 'Password123!',
         cardId: `CARD${Date.now()}`,
-        vehiclePlate: `T${Date.now().toString().slice(-7)}`
+        vehiclePlate: 'ABC1234'
       };
 
       const response = await request(app)
@@ -62,38 +64,35 @@ describe('Authentication Controller', () => {
     });
 
     it('No debe registrar con email duplicado', async () => {
-      const ts = Date.now();
       const duplicateUser = {
         name: 'Duplicate User',
-        email: `dup-${ts}@example.com`,
+        email: `dup-${Date.now()}@example.com`,
         password: 'Password123!',
-        cardId: `DUP${ts}`,
-        vehiclePlate: `D${ts.toString().slice(-7)}`
+        cardId: `CARD${Date.now()}`,
+        vehiclePlate: 'XYZ9999'
       };
 
       // Primer registro
       const response1 = await request(app)
         .post('/api/auth/register')
         .send(duplicateUser);
-
+      
       expect(response1.status).toBe(201);
 
-      // Segundo intento con mismo email (debe fallar)
-      const duplicateUser2 = { ...duplicateUser, cardId: `DUP${ts}2`, vehiclePlate: `D${ts.toString().slice(-6)}2` };
-      const response2 = await request(app)
+      // Segundo intento (debe fallar)
+      const response = await request(app)
         .post('/api/auth/register')
-        .send(duplicateUser2);
-
-      expect(response2.status).toBe(400);
-      expect(response2.body).toBeDefined();
+        .send(duplicateUser);
+      
+      expect(response.status).toBe(400);
+      expect(response.body).toBeDefined();
     });
   });
 
   describe('POST /api/auth/login', () => {
     it('Debe login con credenciales válidas', async () => {
-      const ts = Date.now();
       const credentials = {
-        email: `login-test-${ts}@example.com`,
+        email: `login-test-${Date.now()}@example.com`,
         password: 'Password123!'
       };
 
@@ -103,8 +102,8 @@ describe('Authentication Controller', () => {
         .send({
           ...credentials,
           name: 'Login Test',
-          cardId: `LGN${ts}`,
-          vehiclePlate: `L${ts.toString().slice(-7)}`
+          cardId: `CARD${Date.now()}`,
+          vehiclePlate: 'LGN1234'
         });
 
       expect(registerResponse.status).toBe(201);
@@ -128,7 +127,7 @@ describe('Authentication Controller', () => {
       const response = await request(app)
         .post('/api/auth/login')
         .send(credentials);
-
+      
       expect(response.status).toBe(401);
       expect(response.body).toBeDefined();
     });

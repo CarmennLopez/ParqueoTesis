@@ -1,48 +1,36 @@
-/**
- * updateCoordinates.js - Actualiza coordenadas de un lote de parqueo (PostgreSQL/Sequelize)
- * Ejecutar con: node seeders/updateCoordinates.js
- */
+const { MongoClient } = require('mongodb');
 
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-
-const { sequelize } = require('../src/config/database');
-const ParkingLot = require('../src/models/ParkingLot');
+const uri = 'mongodb://localhost:27017';
+const client = new MongoClient(uri);
 
 async function updateCoordinates() {
     try {
-        await sequelize.authenticate();
-        console.log('✅ Conectado a PostgreSQL');
+        await client.connect();
+        const db = client.db('parking_db');
+        const collection = db.collection('parkinglots');
 
         // San Antonio La Paz coordinates: [-90.2866, 14.7592]
-        const [updatedCount] = await ParkingLot.update(
+        const result = await collection.updateOne(
+            { name: 'Campus Central' },
             {
-                location: {
-                    type: 'Point',
-                    coordinates: [-90.2866, 14.7592]
+                $set: {
+                    location: {
+                        type: 'Point',
+                        coordinates: [-90.2866, 14.7592]
+                    }
                 }
-            },
-            { where: { name: 'Campus Central' } }
+            }
         );
 
-        console.log('✅ Coordenadas actualizadas:', updatedCount, 'registro(s)');
+        console.log('✅ Coordenadas actualizadas:', result.modifiedCount);
 
-        // Verificar
-        const lot = await ParkingLot.findOne({ where: { name: 'Campus Central' } });
-        if (lot) {
-            console.log('📍 Ubicación actualizada:', lot.location);
-        } else {
-            console.log('⚠️  No se encontró el lote "Campus Central".');
-        }
+        // Verify
+        const lot = await collection.findOne({ name: 'Campus Central' });
+        console.log('📍 Ubicación:', lot.location);
 
-    } catch (error) {
-        console.error('❌ Error:', error.message);
-        process.exit(1);
     } finally {
-        await sequelize.close();
-        console.log('✅ Desconectado de PostgreSQL');
-        process.exit(0);
+        await client.close();
     }
 }
 
-updateCoordinates();
+updateCoordinates().catch(console.error);

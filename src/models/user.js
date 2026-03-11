@@ -3,6 +3,23 @@ const { sequelize } = require('../config/database');
 const bcrypt = require('bcrypt');
 const { USER_ROLES } = require('../config/constants');
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       properties:
+ *         id: { type: integer }
+ *         name: { type: string }
+ *         email: { type: string }
+ *         role: { type: string, enum: [student, faculty, visitor, guard, admin] }
+ *         vehiclePlate: { type: string }
+ *         currentParkingLotId: { type: integer, nullable: true }
+ *         currentParkingSpace: { type: string, nullable: true }
+ *         entryTime: { type: string, format: date-time, nullable: true }
+ *         hasPaid: { type: boolean }
+ */
 const User = sequelize.define('User', {
     id: {
         type: DataTypes.INTEGER,
@@ -82,26 +99,21 @@ const User = sequelize.define('User', {
         defaultValue: 0,
         field: 'last_payment_amount'
     },
+    fcmToken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: 'fcm_token'
+    },
     refreshTokenVersion: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
         field: 'refresh_token_version'
     },
-    // Solvencia mensual (solo aplicable a estudiantes)
-    isSolvent: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-        field: 'is_solvent'
-    },
-    solvencyExpires: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: 'solvency_expires'
-    },
-    solvencyUpdatedBy: {
+    assignedParkingLotId: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        field: 'solvency_updated_by'  // FK al admin que actualizó
+        field: 'assigned_parking_lot_id',
+        comment: 'Para guardias: ID del parqueo asignado'
     }
 }, {
     tableName: 'users',
@@ -110,6 +122,13 @@ const User = sequelize.define('User', {
         beforeSave: async (user) => {
             if (user.changed('password')) {
                 user.password = await bcrypt.hash(user.password, 10);
+            }
+        },
+        beforeUpdate: async (user) => {
+            console.log(`[DIAGNOSTIC] Saving user ${user.id} (${user.email}). hasPaid current: ${user.hasPaid}, changed: ${user.changed('hasPaid')}`);
+            if (user.changed('hasPaid') && user.hasPaid === false) {
+                console.trace(`⚠️ [DIAGNOSTIC] !!!!!!!! ALERT !!!!!!!! hasPaid being SET TO FALSE for user ID: ${user.id}`);
+                logger.warn(`⚠️ [DIAGNOSTIC] hasPaid being set to FALSE for user ID: ${user.id}. Data: ${JSON.stringify(user.toJSON())}`);
             }
         }
     }
